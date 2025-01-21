@@ -2,11 +2,11 @@ runpod_worker_comfy:
   base_path: /runpod-volume
   checkpoints: storage/stable_diffusion/models/ckpt/
   clip: storage/stable_diffusion/models/clip/
-  clip_vision: models/clip_vision/
-  configs: models/configs/
+  clip_vision: storage/stable_diffusion/models/clip_vision/
+  configs: storage/stable_diffusion/models/configs/
   controlnet: storage/stable_diffusion/models/controlnet/
-  embeddings: models/embeddings/
+  embeddings: storage/stable_diffusion/models/embeddings/
   loras: storage/stable_diffusion/models/lora/
-  upscale_models: models/upscale_models/
+  upscale_models: storage/stable_diffusion/models/upscale_models/
   vae: storage/stable_diffusion/models/vae/
   unet: storage/stable_diffusion/models/unet/
