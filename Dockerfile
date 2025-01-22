@@ -89,6 +89,8 @@ RUN if [ "$MODEL_TYPE" = "sdxl" ]; then \
       wget -O models/checkpoints/animaPencilXL_v500.safetensors https://huggingface.co/bluepen5805/anima_pencil-XL/resolve/main/anima_pencil-XL-v5.0.0.safetensors; \
     elif [ "$MODEL_TYPE" = "blue-pencil-xl" ]; then \
       wget -O models/checkpoints/bluePencilXL_v700.safetensors https://huggingface.co/bluepen5805/blue_pencil-XL/resolve/main/blue_pencil-XL-v7.0.0.safetensors; \
+    elif [ "$MODEL_TYPE" = "blue-pencil-xl_v2" ]; then \
+      wget -O models/checkpoints/bluePencilXL_v200.safetensors https://huggingface.co/bluepen5805/blue_pencil-XL/resolve/main/blue_pencil-XL-v2.0.0.safetensors; \
     elif [ "$MODEL_TYPE" = "blue-pencil" ]; then \
       wget -O models/checkpoints/bluePencil_v10.safetensors "https://civitai.com/api/download/models/107812?type=Model&format=SafeTensor&size=pruned&fp=fp16" && \
       wget -O models/vae/ClearVAE_v23_sd15.safetensors "https://civitai.com/api/download/models/88156?type=Model&format=SafeTensor"; \
