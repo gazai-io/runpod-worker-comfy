@@ -20,6 +20,9 @@ RUN apt-get update && apt-get install -y \
     && ln -sf /usr/bin/python3.10 /usr/bin/python \
     && ln -sf /usr/bin/pip3 /usr/bin/pip
 
+# Install torch, xformers which matches to the cuda version
+RUN pip install torch torchvision torchaudio xformers --index-url https://download.pytorch.org/whl/cu124
+
 # Clean up to reduce image size
 RUN apt-get autoremove -y && apt-get clean -y && rm -rf /var/lib/apt/lists/*
 
