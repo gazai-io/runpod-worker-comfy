@@ -138,17 +138,7 @@ RUN git clone https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite.git /comfy
     cd /comfyui/custom_nodes/ComfyUI-VideoHelperSuite && \
     pip install -r requirements.txt
 
-RUN git clone https://github.com/ComfyUI-Workflow/ComfyUI-OpenAI /comfyui/custom_nodes/ComfyUI-OpenAI && \
-    cd /comfyui/custom_nodes/ComfyUI-OpenAI && \
-    pip install -r requirements.txt
-
-RUN git clone https://github.com/WASasquatch/was-node-suite-comfyui /comfyui/custom_nodes/was-node-suite-comfyui && \
-    cd /comfyui/custom_nodes/was-node-suite-comfyui && \
-    pip install -r requirements.txt
-
 RUN git clone https://github.com/ramyma/A8R8_ComfyUI_nodes.git /comfyui/custom_nodes/A8R8_ComfyUI_nodes
-
-RUN git clone https://github.com/M1kep/ComfyLiterals.git /comfyui/custom_nodes/ComfyLiterals
 
 # Start container
 CMD ["/start.sh"]
