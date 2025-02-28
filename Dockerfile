@@ -140,5 +140,9 @@ RUN git clone https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite.git /comfy
 
 RUN git clone https://github.com/ramyma/A8R8_ComfyUI_nodes.git /comfyui/custom_nodes/A8R8_ComfyUI_nodes
 
+RUN git clone https://github.com/1038lab/ComfyUI-RMBG.git /comfyui/custom_nodes/ComfyUI-RMBG \
+    cd /comfyui/custom_nodes/ComfyUI-RMBG && \
+    pip install -r requirements.txt
+
 # Start container
 CMD ["/start.sh"]
