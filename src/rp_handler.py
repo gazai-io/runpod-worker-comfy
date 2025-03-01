@@ -284,8 +284,8 @@ def process_output_images(outputs, job_id):
                 )
             else:
                 # base64 image
-                # image = base64_encode(local_image_path)
-                image = base64_encode_jpeg(local_image_path)
+                image = base64_encode(local_image_path)
+                # image = base64_encode_jpeg(local_image_path)
                 print(
                     "runpod-worker-comfy - the image was generated and converted to base64"
                 )
