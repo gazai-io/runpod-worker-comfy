@@ -6,7 +6,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 # Prefer binary wheels over source distributions for faster pip installations
 ENV PIP_PREFER_BINARY=1
 # Ensures output from python is printed immediately to the terminal without buffering
-ENV PYTHONUNBUFFERED=1 
+ENV PYTHONUNBUFFERED=1
 # Speed up some cmake builds
 ENV CMAKE_BUILD_PARALLEL_LEVEL=8
 
@@ -34,6 +34,9 @@ RUN /usr/bin/yes | comfy --workspace /comfyui install --cuda-version 12.4 --nvid
 
 # Change working directory to ComfyUI
 WORKDIR /comfyui
+
+# Pull latest comfyui
+RUN git pull origin master
 
 # Install runpod
 RUN pip install runpod requests
