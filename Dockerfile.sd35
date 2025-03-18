@@ -6,7 +6,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 # Prefer binary wheels over source distributions for faster pip installations
 ENV PIP_PREFER_BINARY=1
 # Ensures output from python is printed immediately to the terminal without buffering
-ENV PYTHONUNBUFFERED=1 
+ENV PYTHONUNBUFFERED=1
 # Speed up some cmake builds
 ENV CMAKE_BUILD_PARALLEL_LEVEL=8
 
@@ -60,7 +60,6 @@ CMD ["/start.sh"]
 # Stage 2: Download models
 FROM base as downloader
 
-ARG HUGGINGFACE_ACCESS_TOKEN
 ARG MODEL_TYPE
 
 # Change working directory to ComfyUI
@@ -72,7 +71,7 @@ RUN mkdir -p models/checkpoints models/vae models/clip models/unet
 COPY models/clip/clip_g.safetensors models/clip/clip_g.safetensors
 COPY models/clip/clip_l.safetensors models/clip/clip_l.safetensors
 COPY models/clip/t5xxl_fp8_e4m3fn.safetensors models/clip/t5xxl_fp8_e4m3fn.safetensors
-COPY models/clip/t5xxl_fp16.safetensors models/clip/t5xxl_fp16.safetensors
+# COPY models/clip/t5xxl_fp16.safetensors models/clip/t5xxl_fp16.safetensors
 COPY models/checkpoints/sd3.5_large.safetensors models/checkpoints/sd3.5_large.safetensors
 
 # # Stage 3: Final image
@@ -81,9 +80,12 @@ FROM base as final
 # # Copy models from stage 2 to the final image
 COPY --from=downloader /comfyui/models /comfyui/models
 
-RUN git clone https://github.com/kohya-ss/ControlNet-LLLite-ComfyUI.git /comfyui/custom_nodes/ControlNet-LLLite-ComfyUI && \
-    wget -O /comfyui/custom_nodes/ControlNet-LLLite-ComfyUI/models/kohya_controllllite_xl_canny_anime.safetensors https://huggingface.co/kohya-ss/controlnet-lllite/resolve/main/controllllite_v01032064e_sdxl_canny_anime.safetensors?download=true && \
-    wget -O /comfyui/custom_nodes/ControlNet-LLLite-ComfyUI/models/kohya_controllllite_xl_scribble_anime.safetensors https://huggingface.co/kohya-ss/controlnet-lllite/resolve/main/controllllite_v01032064e_sdxl_fake_scribble_anime.safetensors?download=true
+WORKDIR /comfyui
+
+RUN pip install -r requirements.txt
+
+RUN git clone https://github.com/cubiq/ComfyUI_essentials.git /comfyui/custom_nodes/ComfyUI_essentials && \
+    pip install colour-science pixeloe transparent-background
 
 RUN git clone https://github.com/ltdrdata/ComfyUI-Impact-Pack.git /comfyui/custom_nodes/ComfyUI-Impact-Pack && \
     cd /comfyui/custom_nodes/ComfyUI-Impact-Pack && \
@@ -118,6 +120,10 @@ RUN git clone https://github.com/WASasquatch/was-node-suite-comfyui /comfyui/cus
 RUN git clone https://github.com/ramyma/A8R8_ComfyUI_nodes.git /comfyui/custom_nodes/A8R8_ComfyUI_nodes
 
 RUN git clone https://github.com/M1kep/ComfyLiterals.git /comfyui/custom_nodes/ComfyLiterals
+
+RUN git clone https://github.com/1038lab/ComfyUI-RMBG /comfyui/custom_nodes/ComfyUI-RMBG && \
+    cd /comfyui/custom_nodes/ComfyUI-RMBG && \
+    pip install -r requirements.txt
 
 # Start container
 CMD ["/start.sh"]

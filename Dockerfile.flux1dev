@@ -20,6 +20,8 @@ RUN apt-get update && apt-get install -y \
     && ln -sf /usr/bin/python3.10 /usr/bin/python \
     && ln -sf /usr/bin/pip3 /usr/bin/pip
 
+RUN pip install --upgrade pip
+
 # Install torch, xformers which matches to the cuda version
 RUN pip install torch torchvision torchaudio xformers --index-url https://download.pytorch.org/whl/cu124
 
@@ -63,7 +65,6 @@ CMD ["/start.sh"]
 # Stage 2: Download models
 FROM base as downloader
 
-ARG HUGGINGFACE_ACCESS_TOKEN
 ARG MODEL_TYPE
 
 # Change working directory to ComfyUI
@@ -75,18 +76,27 @@ RUN mkdir -p models/checkpoints models/vae models/clip models/unet models/contro
 COPY models/vae/ae.safetensors models/vae/ae.safetensors
 COPY models/clip/clip_l.safetensors models/clip/clip_l.safetensors
 COPY models/clip/t5xxl_fp8_e4m3fn.safetensors models/clip/t5xxl_fp8_e4m3fn.safetensors
-COPY models/clip/t5xxl_fp16.safetensors models/clip/t5xxl_fp16.safetensors
+# COPY models/clip/t5xxl_fp16.safetensors models/clip/t5xxl_fp16.safetensors
 COPY models/unet/flux1-dev.safetensors models/unet/flux1-dev.safetensors
-COPY models/controlnet/FLUX.1-dev-ControlNet-Union-Pro.safetensors models/controlnet/FLUX.1-dev-ControlNet-Union-Pro.safetensors
+COPY models/unet/flux1-fill-dev.safetensors models/unet/flux1-fill-dev.safetensors
+# COPY models/controlnet/FLUX.1-dev-ControlNet-Union-Pro.safetensors models/controlnet/FLUX.1-dev-ControlNet-Union-Pro.safetensors
 COPY models/xlabs/controlnets/flux-canny-controlnet-v3.safetensors models/xlabs/controlnets/flux-canny-controlnet-v3.safetensors
-COPY models/xlabs/controlnets/flux-depth-controlnet-v3.safetensors models/xlabs/controlnets/flux-depth-controlnet-v3.safetensors
-COPY models/xlabs/controlnets/flux-hed-controlnet-v3.safetensors models/xlabs/controlnets/flux-hed-controlnet-v3.safetensors
+# COPY models/xlabs/controlnets/flux-depth-controlnet-v3.safetensors models/xlabs/controlnets/flux-depth-controlnet-v3.safetensors
+# COPY models/xlabs/controlnets/flux-hed-controlnet-v3.safetensors models/xlabs/controlnets/flux-hed-controlnet-v3.safetensors
+COPY models/lora/flux/flat_colour_anime_style_v3.4.safetensors models/lora/flux/flat_colour_anime_style_v3.4.safetensors
 
 # # Stage 3: Final image
 FROM base as final
 
 # # Copy models from stage 2 to the final image
 COPY --from=downloader /comfyui/models /comfyui/models
+
+WORKDIR /comfyui
+
+RUN pip install -r requirements.txt
+
+RUN git clone https://github.com/cubiq/ComfyUI_essentials.git /comfyui/custom_nodes/ComfyUI_essentials && \
+    pip install colour-science pixeloe transparent-background
 
 RUN git clone https://github.com/XLabs-AI/x-flux-comfyui.git /comfyui/custom_nodes/x-flux-comfyui && \
     cd /comfyui/custom_nodes/x-flux-comfyui && \
@@ -125,6 +135,10 @@ RUN git clone https://github.com/WASasquatch/was-node-suite-comfyui /comfyui/cus
 RUN git clone https://github.com/ramyma/A8R8_ComfyUI_nodes.git /comfyui/custom_nodes/A8R8_ComfyUI_nodes
 
 RUN git clone https://github.com/M1kep/ComfyLiterals.git /comfyui/custom_nodes/ComfyLiterals
+
+RUN git clone https://github.com/1038lab/ComfyUI-RMBG /comfyui/custom_nodes/ComfyUI-RMBG && \
+    cd /comfyui/custom_nodes/ComfyUI-RMBG && \
+    pip install -r requirements.txt
 
 # Start container
 CMD ["/start.sh"]
