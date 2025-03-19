@@ -81,7 +81,7 @@ COPY models/unet/flux1-fill-dev.safetensors models/unet/flux1-fill-dev.safetenso
 COPY models/xlabs/controlnets/flux-canny-controlnet-v3.safetensors models/xlabs/controlnets/flux-canny-controlnet-v3.safetensors
 # COPY models/xlabs/controlnets/flux-depth-controlnet-v3.safetensors models/xlabs/controlnets/flux-depth-controlnet-v3.safetensors
 # COPY models/xlabs/controlnets/flux-hed-controlnet-v3.safetensors models/xlabs/controlnets/flux-hed-controlnet-v3.safetensors
-COPY models/lora/flux/flat_colour_anime_style_v3.4.safetensors models/lora/flux/flat_colour_anime_style_v3.4.safetensors
+COPY models/loras/flux/flat_colour_anime_style_v3.4.safetensors models/loras/flux/flat_colour_anime_style_v3.4.safetensors
 
 # # Stage 3: Final image
 FROM base as final
