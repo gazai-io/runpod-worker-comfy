@@ -363,13 +363,29 @@ def handler(job):
         while retries < COMFY_POLLING_MAX_RETRIES:
             history = get_history(prompt_id)
 
+            if prompt_id in history and history[prompt_id].get("status"):
+                print(history[prompt_id].get("status").get("messages"))
+
             # Exit the loop if we have found the history
-            if prompt_id in history and history[prompt_id].get("outputs"):
+            is_finished = False
+            if prompt_id in history and history[prompt_id].get("status") and history[prompt_id].get("status").get("messages"):
+                for message in history[prompt_id]["status"]["messages"]:
+                    if (
+                        isinstance(message, list) and
+                        len(message) == 2 and
+                        message[0] == "execution_success" and
+                        isinstance(message[1], dict) and
+                        message[1].get("prompt_id") == prompt_id
+                    ):
+                        is_finished = True
+                        break
+            
+            if is_finished:
                 break
-            else:
-                # Wait before trying again
-                time.sleep(COMFY_POLLING_INTERVAL_MS / 1000)
-                retries += 1
+            
+            # Wait before trying again
+            time.sleep(COMFY_POLLING_INTERVAL_MS / 1000)
+            retries += 1
         else:
             return {"error": "Max retries reached while waiting for image generation"}
     except Exception as e:
