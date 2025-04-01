@@ -64,7 +64,7 @@ def validate_input(job_input):
             )
 
     # Return validated data and no error
-    return {"workflow": workflow, "images": images}, None
+    return {"workflow": workflow, "images": images, "download_file_names": job_input.get("download_file_names", [])}, None
 
 
 def check_server(url, retries=500, delay=50):
@@ -195,18 +195,18 @@ def get_history(prompt_id):
         return json.loads(response.read())
 
 
-def base64_encode(img_path):
+def base64_encode(file_path):
     """
-    Returns base64 encoded image.
+    Returns base64 encoded file.
 
     Args:
-        img_path (str): The path to the image
+        file_path (str): The path to the file
 
     Returns:
-        str: The base64 encoded image
+        str: The base64 encoded file
     """
-    with open(img_path, "rb") as image_file:
-        encoded_string = base64.b64encode(image_file.read()).decode("utf-8")
+    with open(file_path, "rb") as file:
+        encoded_string = base64.b64encode(file.read()).decode("utf-8")
         return f"{encoded_string}"
 
 
@@ -298,10 +298,15 @@ def process_output_images(outputs, job_id):
                 "status": "error",
                 "message": f"the image does not exist in the specified output folder: {local_image_path}",
             }
+        
+    download_file_names = []
+    for file_name in download_file_names:
+        download_file_names.append(base64_encode(file_name))
 
     return {
         "status": "success",
         "message": message,
+        "download_files": download_file_names,
     }
 
 
@@ -328,6 +333,7 @@ def handler(job):
     # Extract validated data
     workflow = validated_data["workflow"]
     images = validated_data.get("images")
+    download_file_names = validated_data.get("download_file_names")
 
     # Make sure that the ComfyUI API is available
     check_server(
