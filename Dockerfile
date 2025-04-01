@@ -148,5 +148,8 @@ RUN git clone https://github.com/Fannovel16/comfyui_controlnet_aux.git /comfyui/
     cd /comfyui/custom_nodes/comfyui_controlnet_aux && \
     pip install -r requirements.txt
 
+RUN git clone https://github.com/pythongosssss/ComfyUI-Custom-Scripts.git /comfyui/custom_nodes/ComfyUI-Custom-Scripts && \
+    cd /comfyui/custom_nodes/ComfyUI-Custom-Scripts
+
 # Start container
 CMD ["/start.sh"]
