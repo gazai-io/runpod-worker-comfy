@@ -144,5 +144,8 @@ RUN git clone https://github.com/1038lab/ComfyUI-RMBG.git /comfyui/custom_nodes/
     cd /comfyui/custom_nodes/ComfyUI-RMBG && \
     pip install -r requirements.txt
 
+RUN git clone https://github.com/pythongosssss/ComfyUI-Custom-Scripts.git /comfyui/custom_nodes/ComfyUI-Custom-Scripts && \
+    cd /comfyui/custom_nodes/ComfyUI-Custom-Scripts
+
 # Start container
 CMD ["/start.sh"]
