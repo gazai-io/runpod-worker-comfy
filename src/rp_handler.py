@@ -224,7 +224,7 @@ def base64_encode_jpeg(img_path):
             return f"{encoded_string}"
 
 
-def process_output_images(outputs, job_id):
+def process_output_images(outputs, job_id, download_file_names):
     """
     This function takes the "outputs" from image generation and the job ID,
     then determines the correct way to return the image, either as a direct URL
@@ -298,15 +298,16 @@ def process_output_images(outputs, job_id):
                 "status": "error",
                 "message": f"the image does not exist in the specified output folder: {local_image_path}",
             }
-        
-    download_file_names = []
+
+    download_files = []
     for file_name in download_file_names:
-        download_file_names.append(base64_encode(file_name))
+        local_file_path = f"{COMFY_OUTPUT_PATH}/{file_name}"
+        download_files.append(base64_encode(local_file_path))
 
     return {
         "status": "success",
         "message": message,
-        "download_files": download_file_names,
+        "download_files": download_files,
     }
 
 
@@ -333,7 +334,7 @@ def handler(job):
     # Extract validated data
     workflow = validated_data["workflow"]
     images = validated_data.get("images")
-    download_file_names = validated_data.get("download_file_names")
+    download_file_names = validated_data.get("download_file_names") or []
 
     # Make sure that the ComfyUI API is available
     check_server(
@@ -392,7 +393,7 @@ def handler(job):
         return {"error": f"Error waiting for image generation: {str(e)}"}
 
     # Get the generated image and return it as URL in an AWS bucket or as base64
-    images_result = process_output_images(history[prompt_id].get("outputs"), job["id"])
+    images_result = process_output_images(history[prompt_id].get("outputs"), job["id"], download_file_names)
 
     result = {**images_result, "refresh_worker": REFRESH_WORKER}
 
