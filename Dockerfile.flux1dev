@@ -30,7 +30,7 @@ RUN apt-get autoremove -y && apt-get clean -y && rm -rf /var/lib/apt/lists/*
 RUN pip install comfy-cli
 
 # Install ComfyUI
-RUN /usr/bin/yes | comfy --workspace /comfyui install --cuda-version 12.4 --nvidia --version 0.2.7 --skip-manager
+RUN /usr/bin/yes | comfy --workspace /comfyui install --cuda-version 12.4 --nvidia --version 0.3.33 --skip-manager
 
 # Change working directory to ComfyUI
 WORKDIR /comfyui
@@ -75,19 +75,21 @@ COPY models/vae/ae.safetensors models/vae/ae.safetensors
 COPY models/clip/clip_l.safetensors models/clip/clip_l.safetensors
 COPY models/clip/t5xxl_fp8_e4m3fn.safetensors models/clip/t5xxl_fp8_e4m3fn.safetensors
 # COPY models/clip/t5xxl_fp16.safetensors models/clip/t5xxl_fp16.safetensors
+
 COPY models/unet/flux1-dev.safetensors models/unet/flux1-dev.safetensors
 COPY models/unet/flux1-fill-dev.safetensors models/unet/flux1-fill-dev.safetensors
-# COPY models/controlnet/FLUX.1-dev-ControlNet-Union-Pro.safetensors models/controlnet/FLUX.1-dev-ControlNet-Union-Pro.safetensors
+
 COPY models/xlabs/controlnets/flux-canny-controlnet-v3.safetensors models/xlabs/controlnets/flux-canny-controlnet-v3.safetensors
-# COPY models/xlabs/controlnets/flux-depth-controlnet-v3.safetensors models/xlabs/controlnets/flux-depth-controlnet-v3.safetensors
+COPY models/xlabs/controlnets/flux-depth-controlnet-v3.safetensors models/xlabs/controlnets/flux-depth-controlnet-v3.safetensors
 # COPY models/xlabs/controlnets/flux-hed-controlnet-v3.safetensors models/xlabs/controlnets/flux-hed-controlnet-v3.safetensors
-COPY models/loras/flux/flat_colour_anime_style_v3.4.safetensors models/loras/flux/flat_colour_anime_style_v3.4.safetensors
+
+COPY models/loras models/loras
 
 # # Stage 3: Final image
-FROM base as final
+#FROM base as final
 
 # # Copy models from stage 2 to the final image
-COPY --from=downloader /comfyui/models /comfyui/models
+#COPY --from=downloader /comfyui/models /comfyui/models
 
 WORKDIR /comfyui
 
@@ -136,6 +138,10 @@ RUN git clone https://github.com/M1kep/ComfyLiterals.git /comfyui/custom_nodes/C
 
 RUN git clone https://github.com/1038lab/ComfyUI-RMBG /comfyui/custom_nodes/ComfyUI-RMBG && \
     cd /comfyui/custom_nodes/ComfyUI-RMBG && \
+    pip install -r requirements.txt
+
+RUN git clone https://github.com/Fannovel16/comfyui_controlnet_aux.git /comfyui/custom_nodes/comfyui_controlnet_aux && \
+    cd /comfyui/custom_nodes/comfyui_controlnet_aux && \
     pip install -r requirements.txt
 
 # Start container
