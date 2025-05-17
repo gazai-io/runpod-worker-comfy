@@ -30,10 +30,13 @@ RUN apt-get autoremove -y && apt-get clean -y && rm -rf /var/lib/apt/lists/*
 RUN pip install comfy-cli
 
 # Install ComfyUI
-RUN /usr/bin/yes | comfy --workspace /comfyui install --cuda-version 12.4 --nvidia --version 0.2.7 --skip-manager
+RUN /usr/bin/yes | comfy --workspace /comfyui install --cuda-version 12.4 --nvidia --version 0.3.33 --skip-manager
 
 # Change working directory to ComfyUI
 WORKDIR /comfyui
+
+# Pull latest comfyui
+RUN git pull origin master
 
 # Install runpod
 RUN pip install runpod requests
@@ -66,19 +69,26 @@ ARG MODEL_TYPE
 WORKDIR /comfyui
 
 # Create necessary directories
-RUN mkdir -p models/checkpoints models/vae models/clip models/unet
+RUN mkdir -p models/checkpoints models/vae models/clip models/unet models/controlnet
 
 COPY models/clip/clip_g.safetensors models/clip/clip_g.safetensors
 COPY models/clip/clip_l.safetensors models/clip/clip_l.safetensors
 COPY models/clip/t5xxl_fp8_e4m3fn.safetensors models/clip/t5xxl_fp8_e4m3fn.safetensors
 # COPY models/clip/t5xxl_fp16.safetensors models/clip/t5xxl_fp16.safetensors
+
 COPY models/checkpoints/sd3.5_large.safetensors models/checkpoints/sd3.5_large.safetensors
+COPY models/checkpoints/sd3.5_large_turbo.safetensors models/checkpoints/sd3.5_large_turbo.safetensors
+
+COPY models/controlnet/sd3.5_large_controlnet_canny.safetensors models/controlnet/sd3.5_large_controlnet_canny.safetensors
+COPY models/controlnet/sd3.5_large_controlnet_depth.safetensors models/controlnet/sd3.5_large_controlnet_depth.safetensors
+
+COPY models/loras models/loras
 
 # # Stage 3: Final image
-FROM base as final
+#FROM base as final
 
 # # Copy models from stage 2 to the final image
-COPY --from=downloader /comfyui/models /comfyui/models
+#COPY --from=downloader /comfyui/models /comfyui/models
 
 WORKDIR /comfyui
 
@@ -124,6 +134,15 @@ RUN git clone https://github.com/M1kep/ComfyLiterals.git /comfyui/custom_nodes/C
 RUN git clone https://github.com/1038lab/ComfyUI-RMBG /comfyui/custom_nodes/ComfyUI-RMBG && \
     cd /comfyui/custom_nodes/ComfyUI-RMBG && \
     pip install -r requirements.txt
+
+RUN git clone https://github.com/Fannovel16/comfyui_controlnet_aux.git /comfyui/custom_nodes/comfyui_controlnet_aux && \
+    cd /comfyui/custom_nodes/comfyui_controlnet_aux && \
+    pip install -r requirements.txt
+
+RUN pip install -U "huggingface_hub[cli]" && \
+    export HF_HUB_ENABLE_HF_TRANSFER=1 && \
+    huggingface-cli download "LiheYoung/depth_anything_vitl14" && \
+    huggingface-cli download "lllyasviel/Annotators" "dpt_hybrid-midas-501f0c75.pt"
 
 # Start container
 CMD ["/start.sh"]
