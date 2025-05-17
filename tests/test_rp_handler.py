@@ -18,10 +18,11 @@ class TestRunpodWorkerComfy(unittest.TestCase):
         input_data = {"workflow": {"key": "value"}}
         validated_data, error = rp_handler.validate_input(input_data)
         self.assertIsNone(error)
-        self.assertEqual(validated_data, {"workflow": {"key": "value"}, "images": None})
+        self.assertEqual(validated_data, {"download_file_names": [], "workflow": {"key": "value"}, "images": None})
 
     def test_valid_input_with_workflow_and_images(self):
         input_data = {
+            "download_file_names": [],
             "workflow": {"key": "value"},
             "images": [{"name": "image1.png", "image": "base64string"}],
         }
@@ -56,7 +57,7 @@ class TestRunpodWorkerComfy(unittest.TestCase):
         input_data = '{"workflow": {"key": "value"}}'
         validated_data, error = rp_handler.validate_input(input_data)
         self.assertIsNone(error)
-        self.assertEqual(validated_data, {"workflow": {"key": "value"}, "images": None})
+        self.assertEqual(validated_data, {"download_file_names": [], "workflow": {"key": "value"}, "images": None})
 
     def test_empty_input(self):
         input_data = None
@@ -136,7 +137,7 @@ class TestRunpodWorkerComfy(unittest.TestCase):
         }
         job_id = "123"
 
-        result = rp_handler.process_output_images(outputs, job_id)
+        result = rp_handler.process_output_images(outputs, job_id, [])
 
         self.assertEqual(result["status"], "success")
 
@@ -161,11 +162,11 @@ class TestRunpodWorkerComfy(unittest.TestCase):
         job_id = "123"
 
         # Call the function under test
-        result = rp_handler.process_output_images(outputs, job_id)
+        result = rp_handler.process_output_images(outputs, job_id, [])
 
         # Assertions
         self.assertEqual(result["status"], "success")
-        self.assertEqual(result["message"], "http://example.com/uploaded/image.png")
+        self.assertEqual(result["message"], ["http://example.com/uploaded/image.png"])
         mock_upload_image.assert_called_once_with(
             job_id, "./test_resources/images/test/ComfyUI_00001_.png"
         )
@@ -195,10 +196,10 @@ class TestRunpodWorkerComfy(unittest.TestCase):
         }
         job_id = "123"
 
-        result = rp_handler.process_output_images(outputs, job_id)
+        result = rp_handler.process_output_images(outputs, job_id, [])
 
         # Check if the image was saved to the 'simulated_uploaded' directory
-        self.assertIn("simulated_uploaded", result["message"])
+        self.assertIn("simulated_uploaded", result["message"][0])
         self.assertEqual(result["status"], "success")
 
     @patch("rp_handler.requests.post")
