@@ -155,5 +155,9 @@ RUN git clone https://github.com/WASasquatch/was-node-suite-comfyui/ /comfyui/cu
     cd /comfyui/custom_nodes/was-node-suite-comfyui && \
     pip install -r requirements.txt
 
+RUN git clone https://github.com/Yanick112/ComfyUI-ToSVG.git /comfyui/custom_nodes/ComfyUI-ToSVG && \
+    cd /comfyui/custom_nodes/ComfyUI-ToSVG && \
+    pip install -r requirements.txt
+
 # Start container
 CMD ["/start.sh"]
