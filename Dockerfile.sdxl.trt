@@ -107,8 +107,8 @@ RUN mkdir -p models/checkpoints models/vae models/clip models/unet models/tensor
 #     fi
 RUN hf download JoeDengUserName/SDXL_TensorRT_Collection bluePencilXL_v600_B_1_C_1_H_1024_W_1024_stat_NVIDIA GeForce RTX 4090_model.engine  --local-dir models/tensorrt
 RUN hf download bluepen5805/blue_pencil-XL blue_pencil-XL-v6.0.0.safetensors --local-dir models/checkpoints
-RUN hf download Comfy-Org/stable-diffusion-3.5-fp8 clip_l.safetensors --local-dir models/clip
-RUN hf download Comfy-Org/stable-diffusion-3.5-fp8 clip_g.safetensors --local-dir models/clip
+RUN hf download Comfy-Org/stable-diffusion-3.5-fp8 ./text_encoders/clip_l.safetensors --local-dir models/clip
+RUN hf download Comfy-Org/stable-diffusion-3.5-fp8 ./text_encoders/clip_g.safetensors --local-dir models/clip
 RUN hf download stabilityai/sdxl-vae sdxl_vae.safetensors --local-dir models/vae
 
 # # Stage 3: Final image
