@@ -62,6 +62,8 @@ FROM base as downloader
 
 ARG HUGGINGFACE_ACCESS_TOKEN
 ARG MODEL_TYPE
+ARG HF_TOKEN
+ARG GITHUB_TOKEN
 
 # Change working directory to ComfyUI
 WORKDIR /comfyui
