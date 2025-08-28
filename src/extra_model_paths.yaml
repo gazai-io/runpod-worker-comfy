@@ -10,4 +10,3 @@ runpod_worker_comfy:
   upscale_models: storage/stable_diffusion/models/upscale_models/
   vae: storage/stable_diffusion/models/vae/
   unet: storage/stable_diffusion/models/unet/
-  tensorrt: storage/stable_diffusion/models/tensorrt/
