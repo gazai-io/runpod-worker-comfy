@@ -402,5 +402,5 @@ def handler(job):
 
 # Start the handler only if this script is run directly
 if __name__ == "__main__":
-    print(os.path.listdir("/comfyui/models/tensorrt"))
+    print(os.listdir("/comfyui/models/tensorrt"))
     runpod.serverless.start({"handler": handler})
