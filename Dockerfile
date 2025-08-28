@@ -27,19 +27,10 @@ RUN pip install torch torchvision torchaudio xformers --index-url https://downlo
 RUN apt-get autoremove -y && apt-get clean -y && rm -rf /var/lib/apt/lists/*
 
 # Install comfy-cli
-RUN pip install comfy-cli
+RUN pip install comfy-cli runpod requests
 
 # Install ComfyUI
 RUN /usr/bin/yes | comfy --workspace /comfyui install --cuda-version 12.4 --nvidia --version 0.3.33 --skip-manager
-
-# Change working directory to ComfyUI
-WORKDIR /comfyui
-
-# Install runpod
-RUN pip install runpod requests
-
-# Go back to the root
-WORKDIR /
 
 # Add scripts
 ADD src/start.sh src/restore_snapshot.sh src/rp_handler.py test_input.json ./
@@ -62,28 +53,19 @@ ARG MODEL_TYPE
 ARG HF_TOKEN
 ARG GITHUB_TOKEN
 
-# Change working directory to ComfyUI
-WORKDIR /comfyui
-
 # Create necessary directories
-RUN mkdir -p models/checkpoints models/vae models/clip models/unet models/tensorrt
+RUN mkdir -p /comfyui/models/checkpoints /comfyui/models/vae /comfyui/models/clip /comfyui/models/unet /comfyui/models/tensorrt
 
 # Download checkpoints/vae/LoRA to include in image based on model type
-RUN hf download JoeDengUserName/SDXL_TensorRT_Collection bluePencilXL_v600_B_1_C_1_H_1024_W_1024_stat_NVIDIA GeForce RTX 4090_model.engine  --local-dir models/tensorrt
-RUN hf download bluepen5805/blue_pencil-XL blue_pencil-XL-v6.0.0.safetensors --local-dir models/checkpoints
-RUN hf download Comfy-Org/stable-diffusion-3.5-fp8 ./text_encoders/clip_l.safetensors --local-dir models/clip
-RUN hf download Comfy-Org/stable-diffusion-3.5-fp8 ./text_encoders/clip_g.safetensors --local-dir models/clip
-RUN hf download stabilityai/sdxl-vae sdxl_vae.safetensors --local-dir models/vae
+RUN hf download JoeDengUserName/SDXL_TensorRT_Collection bluePencilXL_v600_B_1_C_1_H_1024_W_1024_stat_NVIDIA GeForce RTX 4090_model.engine  --local-dir /comfyui/models/tensorrt
+RUN hf download bluepen5805/blue_pencil-XL blue_pencil-XL-v6.0.0.safetensors --local-dir /comfyui/models/checkpoints
+RUN hf download Comfy-Org/stable-diffusion-3.5-fp8 ./text_encoders/clip_l.safetensors --local-dir /comfyui/models/clip
+RUN hf download Comfy-Org/stable-diffusion-3.5-fp8 ./text_encoders/clip_g.safetensors --local-dir /comfyui/models/clip
+RUN hf download stabilityai/sdxl-vae sdxl_vae.safetensors --local-dir /comfyui/models/vae
 
-RUN mv models/clip/text_encoders/clip_l.safetensors models/clip/
-RUN mv models/clip/text_encoders/clip_g.safetensors models/clip/
-RUN rm -rf models/clip/text_encoders
-
-# # Stage 3: Final image
-FROM base as final
-
-# # Copy models from stage 2 to the final image
-COPY --from=downloader /comfyui/models /comfyui/models
+RUN mv /comfyui/models/clip/text_encoders/clip_l.safetensors /comfyui/models/clip/
+RUN mv /comfyui/models/clip/text_encoders/clip_g.safetensors /comfyui/models/clip/
+RUN rm -rf /comfyui/models/clip/text_encoders
 
 Run git clone https://github.com/joedeng-ai/ComfyUI_TensorRT_FLUX.git /comfyui/custom_nodes/ComfyUI_TensorRT_FLUX && \
     pip install -r /comfyui/custom_nodes/ComfyUI_TensorRT_FLUX/requirements.txt
