@@ -67,7 +67,7 @@ ARG MODEL_TYPE
 WORKDIR /comfyui
 
 # Create necessary directories
-RUN mkdir -p models/checkpoints models/vae models/clip models/unet
+RUN mkdir -p models/checkpoints models/vae models/clip models/unet models/tensorrt
 
 # Download checkpoints/vae/LoRA to include in image based on model type
 # RUN if [ "$MODEL_TYPE" = "sdxl" ]; then \
@@ -105,6 +105,11 @@ RUN mkdir -p models/checkpoints models/vae models/clip models/unet
 #       echo "Error: Use Docker.sd35 instead"; \
 #       exit 1; \
 #     fi
+export HF_TOKEN=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
+hf download JoeDengUserName/FLUX_TensorRT_Collection flux1-dev-fp8-e4m3fn_B_1_C_1_H_1024_W_1024_stat_L40_model.engine --local-dir models/tensorrt
+hf download comfyanonymous/flux_text_encoders clip_l.safetensors --local-dir models/clip
+hf download comfyanonymous/flux_text_encoders t5xxl_fp8_e4m3fn.safetensors --local-dir models/clip
+hf download black-forest-labs/FLUX.1-dev ae.safetensors --local-dir models/vae
 
 # # Stage 3: Final image
 FROM base as final
