@@ -39,7 +39,7 @@ WORKDIR /comfyui
 RUN pip install runpod requests
 
 # Support for the network volume
-ADD src/extra_model_paths.yaml ./
+# ADD src/extra_model_paths.yaml ./
 
 # Go back to the root
 WORKDIR /
@@ -105,11 +105,10 @@ RUN mkdir -p models/checkpoints models/vae models/clip models/unet models/tensor
 #       echo "Error: Use Docker.sd35 instead"; \
 #       exit 1; \
 #     fi
-RUN hf download JoeDengUserName/SDXL_TensorRT_Collection bluePencilXL_v600_B_1_C_1_H_1024_W_1024_stat_NVIDIA GeForce RTX 4090_model.engine  --local-dir models/tensorrt
-RUN hf download bluepen5805/blue_pencil-XL blue_pencil-XL-v6.0.0.safetensors --local-dir models/checkpoints
-RUN hf download Comfy-Org/stable-diffusion-3.5-fp8 ./text_encoders/clip_l.safetensors --local-dir models/clip
-RUN hf download Comfy-Org/stable-diffusion-3.5-fp8 ./text_encoders/clip_g.safetensors --local-dir models/clip
-RUN hf download stabilityai/sdxl-vae sdxl_vae.safetensors --local-dir models/vae
+RUN hf download JoeDengUserName/FLUX_TensorRT_Collection flux1-dev-fp8-e4m3fn_B_1_C_1_H_1024_W_1024_stat_L40_model.engine --local-dir models/tensorrt
+RUN hf download comfyanonymous/flux_text_encoders clip_l.safetensors --local-dir models/clip
+RUN hf download comfyanonymous/flux_text_encoders t5xxl_fp8_e4m3fn.safetensors --local-dir models/clip
+RUN hf download lovis93/testllm ae.safetensors --local-dir models/vae
 
 # # Stage 3: Final image
 FROM base as final
