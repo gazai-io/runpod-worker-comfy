@@ -105,7 +105,6 @@ RUN mkdir -p models/checkpoints models/vae models/clip models/unet models/tensor
 #       echo "Error: Use Docker.sd35 instead"; \
 #       exit 1; \
 #     fi
-ENV HF_TOKEN=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
 RUN hf download JoeDengUserName/FLUX_TensorRT_Collection flux1-dev-fp8-e4m3fn_B_1_C_1_H_1024_W_1024_stat_L40_model.engine --local-dir models/tensorrt
 RUN hf download comfyanonymous/flux_text_encoders clip_l.safetensors --local-dir models/clip
 RUN hf download comfyanonymous/flux_text_encoders t5xxl_fp8_e4m3fn.safetensors --local-dir models/clip
