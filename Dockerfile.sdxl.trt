@@ -46,7 +46,7 @@ RUN /restore_snapshot.sh
 CMD ["/start.sh"]
 
 # Stage 2: Download models
-FROM base as downloader
+FROM base as final
 
 ARG HUGGINGFACE_ACCESS_TOKEN
 ARG MODEL_TYPE
@@ -70,6 +70,6 @@ RUN rm -rf /comfyui/models/clip/text_encoders
 Run git clone https://github.com/joedeng-ai/ComfyUI_TensorRT_FLUX.git /comfyui/custom_nodes/ComfyUI_TensorRT_FLUX && \
     pip install -r /comfyui/custom_nodes/ComfyUI_TensorRT_FLUX/requirements.txt
 
-run ls /comfyui/models/tensorrt
+Run ls /comfyui/models/tensorrt
 # Start container
 CMD ["/start.sh"]
