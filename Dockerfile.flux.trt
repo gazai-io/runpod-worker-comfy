@@ -53,16 +53,13 @@ ARG MODEL_TYPE
 ARG HF_TOKEN
 ARG GITHUB_TOKEN
 
-# Change working directory to ComfyUI
-WORKDIR /comfyui
-
 # Create necessary directories
-RUN mkdir -p models/checkpoints models/vae models/clip models/unet models/tensorrt
+RUN mkdir -p /comfyui/models/checkpoints /comfyui/models/vae /comfyui/models/clip /comfyui/models/unet /comfyui/models/tensorrt
 
-RUN hf download JoeDengUserName/FLUX_TensorRT_Collection "flux1-dev-fp8-e4m3fn_B_1_C_1_H_1024_W_1024_stat_L40_model.engine" --local-dir models/tensorrt
-RUN hf download comfyanonymous/flux_text_encoders "clip_l.safetensors" --local-dir models/clip
-RUN hf download comfyanonymous/flux_text_encoders "t5xxl_fp8_e4m3fn.safetensors" --local-dir models/clip
-RUN hf download lovis93/testllm "ae.safetensors" --local-dir models/vae
+RUN hf download JoeDengUserName/FLUX_TensorRT_Collection "flux1-dev-fp8-e4m3fn_B_1_C_1_H_1024_W_1024_stat_L40_model.engine" --local-dir /comfyui/models/tensorrt
+RUN hf download comfyanonymous/flux_text_encoders "clip_l.safetensors" --local-dir /comfyui/models/clip
+RUN hf download comfyanonymous/flux_text_encoders "t5xxl_fp8_e4m3fn.safetensors" --local-dir /comfyui/models/clip
+RUN hf download lovis93/testllm "ae.safetensors" --local-dir /comfyui/models/vae
 RUN rm -rf /comfyui/models/tensorrt/.cache
 RUN rm -rf /comfyui/models/clip/.cache
 RUN rm -rf /comfyui/models/vae/.cache
