@@ -402,8 +402,4 @@ def handler(job):
 
 # Start the handler only if this script is run directly
 if __name__ == "__main__":
-    for root, dirs, files in os.walk("/comfyui/models"):
-        print(f"root: {root}")
-        for name in files:
-            print(f"file: {os.path.join(root, name)}")
     runpod.serverless.start({"handler": handler})
