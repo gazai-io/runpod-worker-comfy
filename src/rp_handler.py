@@ -273,7 +273,7 @@ def process_output_images(outputs, job_id, download_file_names):
     print(f"runpod-worker-comfy - image generation is done")
 
     message = []
-    for output_image in output_images:
+    for output_image in output_files:
         # expected image output folder
         local_image_path = f"{COMFY_OUTPUT_PATH}/{output_image}"
 
