@@ -256,12 +256,17 @@ def process_output_images(outputs, job_id, download_file_names):
     # The path where ComfyUI stores the generated images
     COMFY_OUTPUT_PATH = os.environ.get("COMFY_OUTPUT_PATH", "/comfyui/output")
 
-    output_images = []
+    output_files = []
 
     for node_id, node_output in outputs.items():
         if "images" in node_output:
             for image in node_output["images"]:
-                output_images.append(
+                output_files.append(
+                    os.path.join(image["subfolder"], image["filename"])
+                )
+        elif "gifs" in node_output:
+            for image in node_output["gifs"]:
+                output_files.append(
                     os.path.join(image["subfolder"], image["filename"])
                 )
 

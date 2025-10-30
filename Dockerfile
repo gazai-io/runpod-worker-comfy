@@ -159,5 +159,9 @@ RUN git clone https://github.com/Yanick112/ComfyUI-ToSVG.git /comfyui/custom_nod
     cd /comfyui/custom_nodes/ComfyUI-ToSVG && \
     pip install -r requirements.txt
 
+RUN git clone https://github.com/Visionatrix/ComfyUI-Gemini.git /comfyui/custom_nodes/ComfyUI-Gemini && \
+    cd /comfyui/custom_nodes/ComfyUI-Gemini && \
+    pip install -r requirements.txt
+
 # Start container
 CMD ["/start.sh"]
