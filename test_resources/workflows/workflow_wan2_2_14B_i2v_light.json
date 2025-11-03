@@ -175,7 +175,7 @@
         "inputs": {
           "width": 640,
           "height": 640,
-          "length": 1,
+          "length": 81,
           "batch_size": 1,
           "positive": [
             "93",
@@ -256,8 +256,8 @@
       "108": {
         "inputs": {
           "filename_prefix": "video/ComfyUI",
-          "format": "auto",
-          "codec": "auto",
+          "format": "mp4",
+          "codec": "h264",
           "video": [
             "94",
             0
