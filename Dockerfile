@@ -163,17 +163,8 @@ RUN git clone https://github.com/Visionatrix/ComfyUI-Gemini.git /comfyui/custom_
     cd /comfyui/custom_nodes/ComfyUI-Gemini && \
     pip install -r requirements.txt
 
-RUN git clone https://github.com/pythongosssss/ComfyUI-Custom-Scripts.git /comfyui/custom_nodes/ComfyUI-Custom-Scripts && \
-    cd /comfyui/custom_nodes/ComfyUI-Custom-Scripts && \
-    pip install -r requirements.txt
-
 RUN git clone https://github.com/ssitu/ComfyUI_UltimateSDUpscale.git /comfyui/custom_nodes/ComfyUI_UltimateSDUpscale && \
-    cd /comfyui/custom_nodes/ComfyUI_UltimateSDUpscale && \
-    pip install -r requirements.txt
-  
-RUN git clone https://github.com/ltdrdata/ComfyUI-Impact-Subpack.git /comfyui/custom_nodes/ComfyUI-Impact-Subpack && \
-    cd /comfyui/custom_nodes/ComfyUI-Impact-Subpack && \
-    pip install -r requirements.txt
+    cd /comfyui/custom_nodes/ComfyUI_UltimateSDUpscale
 
 RUN git clone https://github.com/kijai/ComfyUI-KJNodes.git /comfyui/custom_nodes/ComfyUI-KJNodes && \
     cd /comfyui/custom_nodes/ComfyUI-KJNodes && \
