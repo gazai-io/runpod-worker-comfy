@@ -10,3 +10,13 @@ runpod_worker_comfy:
   upscale_models: storage/stable_diffusion/models/upscale_models/
   vae: storage/stable_diffusion/models/vae/
   unet: storage/stable_diffusion/models/unet/
+  ipadapter: storage/stable_diffusion/models/ipadapter/
+  conditioning: storage/stable_diffusion/models/conditioning/
+  text_encoders: storage/stable_diffusion/models/text_encoders/
+  instantid: storage/stable_diffusion/models/instantid/
+  insightface: storage/stable_diffusion/models/insightface/
+  ultralytics: storage/stable_diffusion/models/ultralytics/
+  ultralytics_bbox: storage/stable_diffusion/models/ultralytics_bbox/
+  ultralytics_segm: storage/stable_diffusion/models/ultralytics_segm/
+  llama: storage/stable_diffusion/models/llama/
+  sams: storage/stable_diffusion/models/sams/
