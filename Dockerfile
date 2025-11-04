@@ -170,5 +170,13 @@ RUN git clone https://github.com/kijai/ComfyUI-KJNodes.git /comfyui/custom_nodes
     cd /comfyui/custom_nodes/ComfyUI-KJNodes && \
     pip install -r requirements.txt
 
+RUN git clone https://github.com/lquesada/ComfyUI-Inpaint-CropAndStitch.git /comfyui/custom_nodes/ComfyUI-Inpaint-CropAndStitch && \
+    cd /comfyui/custom_nodes/ComfyUI-Inpaint-CropAndStitch
+
+RUN git clone https://github.com/Clybius/ComfyUI-Extra-Samplers.git /comfyui/custom_nodes/ComfyUI-Extra-Samplers && \
+    cd /comfyui/custom_nodes/ComfyUI-Extra-Samplers && \
+    pip install -r requirements.txt
+
+
 # Start container
 CMD ["/start.sh"]
