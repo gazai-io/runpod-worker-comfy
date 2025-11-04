@@ -177,6 +177,10 @@ RUN git clone https://github.com/Clybius/ComfyUI-Extra-Samplers.git /comfyui/cus
     cd /comfyui/custom_nodes/ComfyUI-Extra-Samplers && \
     pip install -r requirements.txt
 
+RUN git clone https://github.com/yolain/ComfyUI-Easy-Use.git /comfyui/custom_nodes/ComfyUI-Easy-Use && \
+    cd /comfyui/custom_nodes/ComfyUI-Easy-Use && \
+    pip install -r requirements.txt
+
 
 # Start container
 CMD ["/start.sh"]
