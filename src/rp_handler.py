@@ -255,9 +255,9 @@ def process_output_images(outputs, job_id, download_file_names):
 
     # The path where ComfyUI stores the generated images
     COMFY_OUTPUT_PATH = os.environ.get("COMFY_OUTPUT_PATH", "/comfyui/output")
+    COMFY_TEMP_PATH = os.environ.get("COMFY_TEMP_PATH", "/comfyui/temp")
 
     output_files = []
-
     for node_id, node_output in outputs.items():
         if "images" in node_output:
             for image in node_output["images"]:
@@ -276,33 +276,37 @@ def process_output_images(outputs, job_id, download_file_names):
     for output_image in output_files:
         # expected image output folder
         local_image_path = f"{COMFY_OUTPUT_PATH}/{output_image}"
+        local_temp_image_path = f"{COMFY_TEMP_PATH}/{output_image}"
 
         print(f"runpod-worker-comfy - {local_image_path}")
 
         # The image is in the output folder
         if os.path.exists(local_image_path):
-            if os.environ.get("BUCKET_ENDPOINT_URL", False):
-                # URL to image in AWS S3
-                image = rp_upload.upload_image(job_id, local_image_path)
-                print(
-                    "runpod-worker-comfy - the image was generated and uploaded to AWS S3"
-                )
-            else:
-                # base64 image
-                image = base64_encode(local_image_path)
-                # image = base64_encode_jpeg(local_image_path)
-                print(
-                    "runpod-worker-comfy - the image was generated and converted to base64"
-                )
-
-            message.append(image)
-
+            final_url_path = local_image_path
+        elif os.path.exists(local_temp_image_path):
+            final_url_path = local_temp_image_path
         else:
             print("runpod-worker-comfy - the image does not exist in the output folder")
             return {
                 "status": "error",
                 "message": f"the image does not exist in the specified output folder: {local_image_path}",
             }
+        
+        if os.environ.get("BUCKET_ENDPOINT_URL", False):
+            # URL to image in AWS S3
+            image = rp_upload.upload_image(job_id, final_url_path)
+            print(
+                "runpod-worker-comfy - the image was generated and uploaded to AWS S3"
+            )
+        else:
+            # base64 image
+            image = base64_encode(final_url_path)
+            # image = base64_encode_jpeg(final_url_path)
+            print(
+                "runpod-worker-comfy - the image was generated and converted to base64"
+            )
+
+        message.append(image)
 
     download_files = []
     for file_name in download_file_names:

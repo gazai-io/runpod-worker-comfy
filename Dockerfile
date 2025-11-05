@@ -127,8 +127,6 @@ RUN git clone https://github.com/ltdrdata/ComfyUI-Impact-Subpack /comfyui/custom
     pip install -r requirements.txt && \
     python install.py
 
-RUN git clone https://github.com/BadCafeCode/masquerade-nodes-comfyui.git /comfyui/custom_nodes/masquerade-nodes-comfyui
-
 # Use Gazai's MTB node since the original one takes too long to compile due to the numba issue.
 RUN git clone https://github.com/gazai-io/comfy_mtb.git /comfyui/custom_nodes/comfy_mtb && \
     cd /comfyui/custom_nodes/comfy_mtb && \
@@ -138,8 +136,6 @@ RUN git clone https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite.git /comfy
     cd /comfyui/custom_nodes/ComfyUI-VideoHelperSuite && \
     pip install -r requirements.txt
 
-RUN git clone https://github.com/ramyma/A8R8_ComfyUI_nodes.git /comfyui/custom_nodes/A8R8_ComfyUI_nodes
-
 RUN git clone https://github.com/1038lab/ComfyUI-RMBG.git /comfyui/custom_nodes/ComfyUI-RMBG && \
     cd /comfyui/custom_nodes/ComfyUI-RMBG && \
     pip install -r requirements.txt
@@ -147,9 +143,6 @@ RUN git clone https://github.com/1038lab/ComfyUI-RMBG.git /comfyui/custom_nodes/
 RUN git clone https://github.com/Fannovel16/comfyui_controlnet_aux.git /comfyui/custom_nodes/comfyui_controlnet_aux && \
     cd /comfyui/custom_nodes/comfyui_controlnet_aux && \
     pip install -r requirements.txt
-
-RUN git clone https://github.com/pythongosssss/ComfyUI-Custom-Scripts.git /comfyui/custom_nodes/ComfyUI-Custom-Scripts && \
-    cd /comfyui/custom_nodes/ComfyUI-Custom-Scripts
 
 RUN git clone https://github.com/WASasquatch/was-node-suite-comfyui/ /comfyui/custom_nodes/was-node-suite-comfyui && \
     cd /comfyui/custom_nodes/was-node-suite-comfyui && \
@@ -163,15 +156,9 @@ RUN git clone https://github.com/Visionatrix/ComfyUI-Gemini.git /comfyui/custom_
     cd /comfyui/custom_nodes/ComfyUI-Gemini && \
     pip install -r requirements.txt
 
-RUN git clone https://github.com/ssitu/ComfyUI_UltimateSDUpscale.git /comfyui/custom_nodes/ComfyUI_UltimateSDUpscale && \
-    cd /comfyui/custom_nodes/ComfyUI_UltimateSDUpscale
-
 RUN git clone https://github.com/kijai/ComfyUI-KJNodes.git /comfyui/custom_nodes/ComfyUI-KJNodes && \
     cd /comfyui/custom_nodes/ComfyUI-KJNodes && \
     pip install -r requirements.txt
-
-RUN git clone https://github.com/lquesada/ComfyUI-Inpaint-CropAndStitch.git /comfyui/custom_nodes/ComfyUI-Inpaint-CropAndStitch && \
-    cd /comfyui/custom_nodes/ComfyUI-Inpaint-CropAndStitch
 
 RUN git clone https://github.com/Clybius/ComfyUI-Extra-Samplers.git /comfyui/custom_nodes/ComfyUI-Extra-Samplers && \
     cd /comfyui/custom_nodes/ComfyUI-Extra-Samplers && \
@@ -180,6 +167,13 @@ RUN git clone https://github.com/Clybius/ComfyUI-Extra-Samplers.git /comfyui/cus
 RUN git clone https://github.com/yolain/ComfyUI-Easy-Use.git /comfyui/custom_nodes/ComfyUI-Easy-Use && \
     cd /comfyui/custom_nodes/ComfyUI-Easy-Use && \
     pip install -r requirements.txt
+
+RUN git clone https://github.com/mfg637/ComfyUI-ScheduledGuider-Ext.git /comfyui/custom_nodes/ComfyUI-ScheduledGuider-Ext
+RUN git clone https://github.com/lquesada/ComfyUI-Inpaint-CropAndStitch.git /comfyui/custom_nodes/ComfyUI-Inpaint-CropAndStitch
+RUN git clone https://github.com/ssitu/ComfyUI_UltimateSDUpscale.git /comfyui/custom_nodes/ComfyUI_UltimateSDUpscale
+RUN git clone https://github.com/pythongosssss/ComfyUI-Custom-Scripts.git /comfyui/custom_nodes/ComfyUI-Custom-Scripts
+RUN git clone https://github.com/ramyma/A8R8_ComfyUI_nodes.git /comfyui/custom_nodes/A8R8_ComfyUI_nodes
+RUN git clone https://github.com/BadCafeCode/masquerade-nodes-comfyui.git /comfyui/custom_nodes/masquerade-nodes-comfyui
 
 
 # Start container
