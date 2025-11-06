@@ -167,6 +167,9 @@ RUN git clone https://github.com/Clybius/ComfyUI-Extra-Samplers.git /comfyui/cus
 RUN git clone https://github.com/yolain/ComfyUI-Easy-Use.git /comfyui/custom_nodes/ComfyUI-Easy-Use && \
     cd /comfyui/custom_nodes/ComfyUI-Easy-Use && \
     pip install -r requirements.txt
+RUN git clone https://github.com/cubiq/ComfyUI_essentials.git /comfyui/custom_nodes/ComfyUI_essentials && \
+    cd /comfyui/custom_nodes/ComfyUI_essentials && \
+    pip install -r requirements.txt
 
 RUN git clone https://github.com/mfg637/ComfyUI-ScheduledGuider-Ext.git /comfyui/custom_nodes/ComfyUI-ScheduledGuider-Ext
 RUN git clone https://github.com/lquesada/ComfyUI-Inpaint-CropAndStitch.git /comfyui/custom_nodes/ComfyUI-Inpaint-CropAndStitch
@@ -174,6 +177,7 @@ RUN git clone https://github.com/ssitu/ComfyUI_UltimateSDUpscale.git /comfyui/cu
 RUN git clone https://github.com/pythongosssss/ComfyUI-Custom-Scripts.git /comfyui/custom_nodes/ComfyUI-Custom-Scripts
 RUN git clone https://github.com/ramyma/A8R8_ComfyUI_nodes.git /comfyui/custom_nodes/A8R8_ComfyUI_nodes
 RUN git clone https://github.com/BadCafeCode/masquerade-nodes-comfyui.git /comfyui/custom_nodes/masquerade-nodes-comfyui
+
 
 
 # Start container
