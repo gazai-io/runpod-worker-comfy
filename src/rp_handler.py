@@ -1,5 +1,5 @@
 import runpod
-from runpod.serverless.utils import rp_upload
+from runpod.serverless.utils import rp_upload, get_boto_client
 import json
 import urllib.request
 import urllib.parse
@@ -9,6 +9,9 @@ import requests
 import base64
 from io import BytesIO
 from PIL import Image
+from typing import Optional, Tuple
+import uuid
+
 
 # Time to wait between API check attempts in milliseconds
 COMFY_API_AVAILABLE_INTERVAL_MS = 50
@@ -223,6 +226,61 @@ def base64_encode_jpeg(img_path):
             encoded_string = base64.b64encode(jpeg_data).decode("utf-8")
             return f"{encoded_string}"
 
+def runpod_upload_image(
+    job_id,
+    image_location,
+    result_index=0,
+    results_list=None,
+    bucket_name: Optional[str] = None,
+):  # pylint: disable=line-too-long # pragma: no cover
+    """
+    Upload a single file to bucket storage.
+    """
+    image_name = str(uuid.uuid4())[:8]
+    boto_client, _ = get_boto_client()
+    file_extension = os.path.splitext(image_location)[1]
+    content_type = "image/" + file_extension.lstrip(".")
+
+    with open(image_location, "rb") as input_file:
+        output = input_file.read()
+
+    if boto_client is None:
+        # Save the output to a file
+        print("No bucket endpoint set, saving to disk folder 'simulated_uploaded'")
+        print("If this is a live endpoint, please reference the following:")
+        print(
+            "https://github.com/runpod/runpod-python/blob/main/docs/serverless/utils/rp_upload.md"
+        )  # pylint: disable=line-too-long
+
+        os.makedirs("simulated_uploaded", exist_ok=True)
+        sim_upload_location = f"simulated_uploaded/{image_name}{file_extension}"
+
+        with open(sim_upload_location, "wb") as file_output:
+            file_output.write(output)
+
+        if results_list is not None:
+            results_list[result_index] = sim_upload_location
+
+        return sim_upload_location
+
+    bucket = bucket_name if bucket_name else time.strftime("%m-%y")
+    boto_client.put_object(
+        Bucket=f"{bucket}",
+        Key=f"{job_id}/{image_name}{file_extension}",
+        Body=output,
+        ContentType=content_type,
+    )
+
+    presigned_url = boto_client.generate_presigned_url(
+        "get_object",
+        Params={"Bucket": f"{bucket}", "Key": f"{job_id}/{image_name}{file_extension}"},
+        ExpiresIn=604800,
+    )
+
+    if results_list is not None:
+        results_list[result_index] = presigned_url
+
+    return presigned_url, f"{job_id}/{image_name}{file_extension}"
 
 def process_output_images(outputs, job_id, download_file_names):
     """
@@ -294,10 +352,11 @@ def process_output_images(outputs, job_id, download_file_names):
         
         if os.environ.get("BUCKET_ENDPOINT_URL", False):
             # URL to image in AWS S3
-            image = rp_upload.upload_image(job_id, final_url_path)
+            image, obj_key = runpod_upload_image(job_id, final_url_path)
             print(
                 "runpod-worker-comfy - the image was generated and uploaded to AWS S3"
             )
+            message.append({"url": image, "object_key": obj_key})
         else:
             # base64 image
             image = base64_encode(final_url_path)
@@ -306,7 +365,7 @@ def process_output_images(outputs, job_id, download_file_names):
                 "runpod-worker-comfy - the image was generated and converted to base64"
             )
 
-        message.append(image)
+            message.append(image)
 
     download_files = []
     for file_name in download_file_names:
