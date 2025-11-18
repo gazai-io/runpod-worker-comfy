@@ -1,5 +1,5 @@
 import runpod
-from runpod.serverless.utils import rp_upload, get_boto_client
+from runpod.serverless.utils import rp_upload
 import json
 import urllib.request
 import urllib.parse
@@ -237,7 +237,7 @@ def runpod_upload_image(
     Upload a single file to bucket storage.
     """
     image_name = str(uuid.uuid4())[:8]
-    boto_client, _ = get_boto_client()
+    boto_client, _ = rp_upload.get_boto_client()
     file_extension = os.path.splitext(image_location)[1]
     content_type = "image/" + file_extension.lstrip(".")
 
@@ -356,7 +356,7 @@ def process_output_images(outputs, job_id, download_file_names):
             print(
                 "runpod-worker-comfy - the image was generated and uploaded to AWS S3"
             )
-            message.append({"url": image, "object_key": obj_key})
+            message.append({"url": image, "ima": obj_key})
         else:
             # base64 image
             image = base64_encode(final_url_path)
