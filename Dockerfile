@@ -12,12 +12,12 @@ ENV CMAKE_BUILD_PARALLEL_LEVEL=8
 
 # Install Python, git and other necessary tools
 RUN apt-get update && apt-get install -y \
-    python3-pip \
-    git \
-    wget \
-    libgl1 \
-    && ln -sf /usr/bin/python3 /usr/bin/python \
-    && ln -sf /usr/bin/pip3 /usr/bin/pip
+    python3-pip python3-venv git wget libgl1 libglib2.0-0 libsm6 libxrender1 libxext6 \
+    && python3 -m venv /opt/venv
+
+# setup virtual environment
+ENV PATH="/opt/venv/bin:$PATH"
+ENV VIRTUAL_ENV="/opt/venv"
 
 # Install torch,  which matches to the cuda version
 RUN pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu130
