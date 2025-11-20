@@ -1,5 +1,5 @@
 # Stage 1: Base image with common dependencies
-FROM nvcr.io/nvidia/cuda:13.0.2-cudnn-devel-ubuntu24.04 as base
+FROM nvcr.io/nvidia/cuda:12.9.0-cudnn-devel-ubuntu24.04 AS base
 
 # Prevents prompts from packages asking for user input during installation
 ENV DEBIAN_FRONTEND=noninteractive
@@ -16,40 +16,28 @@ RUN apt-get update && apt-get install -y \
     && pip install --upgrade uv --break-system-packages \
     && uv venv /opt/venv
 
+# pre install comfyui
+RUN git clone https://github.com/comfyanonymous/ComfyUI.git /comfyui
+
 # Setup virtual environment
 ENV PATH="/opt/venv/bin:$PATH"
 ENV VIRTUAL_ENV="/opt/venv"
 
-# Install torch with CUDA 12.9 support (PyTorch 2.5+ / 3.0+ 官方 cu129 wheel)
-RUN uv pip install torch torchvision torchaudio xformers -U --index-url https://download.pytorch.org/whl/cu130
-
 # Clean up to reduce image size
 RUN apt-get autoremove -y && apt-get clean -y && rm -rf /var/lib/apt/lists/*
 
-# Install ComfyUI
-RUN git clone https://github.com/comfyanonymous/ComfyUI.git /comfyui
-
-# Change working directory to ComfyUI
-WORKDIR /comfyui
-
-# Support for the network volume
-ADD src/extra_model_paths.yaml ./
-RUN uv pip install -r requirements.txt
-
-# Go back to the root
-WORKDIR /
-
-RUN uv pip install runpod requests 
-
 # Add scripts
+ADD src/extra_model_paths.yaml /comfyui/extra_model_paths.yaml
+ADD src/requirements.txt /requirements.txt
+ADD src/create_merge_requirement.py /create_merge_requirement.py
 ADD src/start.sh src/restore_snapshot.sh src/rp_handler.py test_input.json ./
-RUN chmod +x /start.sh /restore_snapshot.sh
 
 # Optionally copy the snapshot file
 ADD *snapshot*.json /
 
-# Restore the snapshot to install custom nodes
-RUN /restore_snapshot.sh
+RUN chmod +x /start.sh /restore_snapshot.sh
+
+
 
 # Start container
 CMD ["/start.sh"]
@@ -107,75 +95,53 @@ RUN if [ "$MODEL_TYPE" = "sdxl" ]; then \
 FROM base as final
 
 # # Copy models from stage 2 to the final image
+COPY --from=base /comfyui /comfyui
 COPY --from=downloader /comfyui/models /comfyui/models
 
-RUN git clone https://github.com/kohya-ss/ControlNet-LLLite-ComfyUI.git /comfyui/custom_nodes/ControlNet-LLLite-ComfyUI && \
-    wget -O /comfyui/custom_nodes/ControlNet-LLLite-ComfyUI/models/kohya_controllllite_xl_canny_anime.safetensors https://huggingface.co/kohya-ss/controlnet-lllite/resolve/main/controllllite_v01032064e_sdxl_canny_anime.safetensors?download=true && \
-    wget -O /comfyui/custom_nodes/ControlNet-LLLite-ComfyUI/models/kohya_controllllite_xl_scribble_anime.safetensors https://huggingface.co/kohya-ss/controlnet-lllite/resolve/main/controllllite_v01032064e_sdxl_fake_scribble_anime.safetensors?download=true
 
-RUN git clone https://github.com/ltdrdata/ComfyUI-Impact-Pack.git /comfyui/custom_nodes/ComfyUI-Impact-Pack && \
-    cd /comfyui/custom_nodes/ComfyUI-Impact-Pack && \
-    apt-get update && apt-get install -y libgl1 libglib2.0-0 libsm6 libxrender1 libxext6 && \
-    uv pip install -r requirements.txt && \
-    python install.py
-
-RUN git clone https://github.com/ltdrdata/ComfyUI-Impact-Subpack /comfyui/custom_nodes/ComfyUI-Impact-Subpack && \
-    cd /comfyui/custom_nodes/ComfyUI-Impact-Subpack && \
-    uv pip install -r requirements.txt && \
-    python install.py
-
-# Use Gazai's MTB node since the original one takes too long to compile due to the numba issue.
-RUN git clone https://github.com/gazai-io/comfy_mtb.git /comfyui/custom_nodes/comfy_mtb && \
-    cd /comfyui/custom_nodes/comfy_mtb && \
-    uv pip install -r requirements.txt
-
-RUN git clone https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite.git /comfyui/custom_nodes/ComfyUI-VideoHelperSuite && \
-    cd /comfyui/custom_nodes/ComfyUI-VideoHelperSuite && \
-    uv pip install -r requirements.txt
-
-RUN git clone https://github.com/1038lab/ComfyUI-RMBG.git /comfyui/custom_nodes/ComfyUI-RMBG && \
-    cd /comfyui/custom_nodes/ComfyUI-RMBG && \
-    uv pip install -r requirements.txt
-
-RUN git clone https://github.com/Fannovel16/comfyui_controlnet_aux.git /comfyui/custom_nodes/comfyui_controlnet_aux && \
-    cd /comfyui/custom_nodes/comfyui_controlnet_aux && \
-    uv pip install -r requirements.txt
-
-RUN git clone https://github.com/WASasquatch/was-node-suite-comfyui/ /comfyui/custom_nodes/was-node-suite-comfyui && \
-    cd /comfyui/custom_nodes/was-node-suite-comfyui && \
-    uv pip install -r requirements.txt
-
-RUN git clone https://github.com/Yanick112/ComfyUI-ToSVG.git /comfyui/custom_nodes/ComfyUI-ToSVG && \
-    cd /comfyui/custom_nodes/ComfyUI-ToSVG && \
-    uv pip install -r requirements.txt
-
-RUN git clone https://github.com/Visionatrix/ComfyUI-Gemini.git /comfyui/custom_nodes/ComfyUI-Gemini && \
-    cd /comfyui/custom_nodes/ComfyUI-Gemini && \
-    uv pip install -r requirements.txt
-
-RUN git clone https://github.com/kijai/ComfyUI-KJNodes.git /comfyui/custom_nodes/ComfyUI-KJNodes && \
-    cd /comfyui/custom_nodes/ComfyUI-KJNodes && \
-    uv pip install -r requirements.txt
-
-RUN git clone https://github.com/Clybius/ComfyUI-Extra-Samplers.git /comfyui/custom_nodes/ComfyUI-Extra-Samplers && \
-    cd /comfyui/custom_nodes/ComfyUI-Extra-Samplers && \
-    uv pip install -r requirements.txt
-
-RUN git clone https://github.com/yolain/ComfyUI-Easy-Use.git /comfyui/custom_nodes/ComfyUI-Easy-Use && \
-    cd /comfyui/custom_nodes/ComfyUI-Easy-Use && \
-    uv pip install -r requirements.txt
-RUN git clone https://github.com/cubiq/ComfyUI_essentials.git /comfyui/custom_nodes/ComfyUI_essentials && \
-    cd /comfyui/custom_nodes/ComfyUI_essentials && \
-    uv pip install -r requirements.txt
-
+# Install ComfyUI and custom nodes
+RUN git clone https://github.com/gazai-io/comfy_mtb.git /comfyui/custom_nodes/comfy_mtb
+RUN git clone https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite.git /comfyui/custom_nodes/ComfyUI-VideoHelperSuite
+RUN git clone https://github.com/1038lab/ComfyUI-RMBG.git /comfyui/custom_nodes/ComfyUI-RMBG
+RUN git clone https://github.com/Fannovel16/comfyui_controlnet_aux.git /comfyui/custom_nodes/comfyui_controlnet_aux 
+RUN git clone https://github.com/WASasquatch/was-node-suite-comfyui/ /comfyui/custom_nodes/was-node-suite-comfyui
+RUN git clone https://github.com/Yanick112/ComfyUI-ToSVG.git /comfyui/custom_nodes/ComfyUI-ToSVG
+RUN git clone https://github.com/Visionatrix/ComfyUI-Gemini.git /comfyui/custom_nodes/ComfyUI-Gemini
+RUN git clone https://github.com/kijai/ComfyUI-KJNodes.git /comfyui/custom_nodes/ComfyUI-KJNodes
+RUN git clone https://github.com/Clybius/ComfyUI-Extra-Samplers.git /comfyui/custom_nodes/ComfyUI-Extra-Samplers
+RUN git clone https://github.com/yolain/ComfyUI-Easy-Use.git /comfyui/custom_nodes/ComfyUI-Easy-Use
+RUN git clone https://github.com/cubiq/ComfyUI_essentials.git /comfyui/custom_nodes/ComfyUI_essentials
 RUN git clone https://github.com/mfg637/ComfyUI-ScheduledGuider-Ext.git /comfyui/custom_nodes/ComfyUI-ScheduledGuider-Ext
 RUN git clone https://github.com/lquesada/ComfyUI-Inpaint-CropAndStitch.git /comfyui/custom_nodes/ComfyUI-Inpaint-CropAndStitch
 RUN git clone https://github.com/ssitu/ComfyUI_UltimateSDUpscale.git /comfyui/custom_nodes/ComfyUI_UltimateSDUpscale
 RUN git clone https://github.com/pythongosssss/ComfyUI-Custom-Scripts.git /comfyui/custom_nodes/ComfyUI-Custom-Scripts
 RUN git clone https://github.com/ramyma/A8R8_ComfyUI_nodes.git /comfyui/custom_nodes/A8R8_ComfyUI_nodes
 RUN git clone https://github.com/BadCafeCode/masquerade-nodes-comfyui.git /comfyui/custom_nodes/masquerade-nodes-comfyui
+RUN git clone https://github.com/kohya-ss/ControlNet-LLLite-ComfyUI.git /comfyui/custom_nodes/ControlNet-LLLite-ComfyUI
+RUN git clone https://github.com/ltdrdata/ComfyUI-Impact-Pack.git /comfyui/custom_nodes/ComfyUI-Impact-Pack
+RUN git clone https://github.com/ltdrdata/ComfyUI-Impact-Subpack.git /comfyui/custom_nodes/ComfyUI-Impact-Subpack
 
 
+# merge all requirements.txt to merged_requirements.txt
+RUN python3 /create_merge_requirement.py
+
+# Install merged requirements.txt
+RUN uv pip install -U -r "merged_requirements.txt" --index-strategy unsafe-best-match --extra-index-url https://download.pytorch.org/whl/cu129
+
+# Restore the snapshot to install custom nodes
+# RUN /restore_snapshot.sh
+# ControlNet-LLLite-ComfyUI extra install
+RUN wget -O /comfyui/custom_nodes/ControlNet-LLLite-ComfyUI/models/kohya_controllllite_xl_canny_anime.safetensors https://huggingface.co/kohya-ss/controlnet-lllite/resolve/main/controllllite_v01032064e_sdxl_canny_anime.safetensors?download=true
+RUN wget -O /comfyui/custom_nodes/ControlNet-LLLite-ComfyUI/models/kohya_controllllite_xl_scribble_anime.safetensors https://huggingface.co/kohya-ss/controlnet-lllite/resolve/main/controllllite_v01032064e_sdxl_fake_scribble_anime.safetensors?download=true
+
+# ComfyUI-Impact-Pack extra install
+RUN cd /comfyui/custom_nodes/ComfyUI-Impact-Pack && \
+    apt-get update && apt-get install -y libgl1 libglib2.0-0 libsm6 libxrender1 libxext6 && \
+    python install.py
+
+# ComfyUI-Impact-Subpac extra install
+RUN cd /comfyui/custom_nodes/ComfyUI-Impact-Subpack && \
+    python install.py
 
 # Start container
 CMD ["/start.sh"]
