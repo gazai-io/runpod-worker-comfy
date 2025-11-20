@@ -36,14 +36,11 @@ ADD src/start.sh src/restore_snapshot.sh src/rp_handler.py test_input.json ./
 ADD *snapshot*.json /
 
 RUN chmod +x /start.sh /restore_snapshot.sh
-
-
-
 # Start container
 CMD ["/start.sh"]
 
 # Stage 2: Download models
-FROM base as downloader
+FROM base AS downloader
 
 ARG HUGGINGFACE_ACCESS_TOKEN
 ARG MODEL_TYPE
@@ -92,7 +89,7 @@ RUN if [ "$MODEL_TYPE" = "sdxl" ]; then \
     fi
 
 # # Stage 3: Final image
-FROM base as final
+FROM downloader AS final
 
 # # Copy models from stage 2 to the final image
 COPY --from=base /comfyui /comfyui
@@ -130,13 +127,13 @@ RUN uv pip install -U -r "merged_requirements.txt" --index-strategy unsafe-best-
 
 # Restore the snapshot to install custom nodes
 # RUN /restore_snapshot.sh
+
 # ControlNet-LLLite-ComfyUI extra install
 RUN wget -O /comfyui/custom_nodes/ControlNet-LLLite-ComfyUI/models/kohya_controllllite_xl_canny_anime.safetensors https://huggingface.co/kohya-ss/controlnet-lllite/resolve/main/controllllite_v01032064e_sdxl_canny_anime.safetensors?download=true
 RUN wget -O /comfyui/custom_nodes/ControlNet-LLLite-ComfyUI/models/kohya_controllllite_xl_scribble_anime.safetensors https://huggingface.co/kohya-ss/controlnet-lllite/resolve/main/controllllite_v01032064e_sdxl_fake_scribble_anime.safetensors?download=true
 
 # ComfyUI-Impact-Pack extra install
 RUN cd /comfyui/custom_nodes/ComfyUI-Impact-Pack && \
-    apt-get update && apt-get install -y libgl1 libglib2.0-0 libsm6 libxrender1 libxext6 && \
     python install.py
 
 # ComfyUI-Impact-Subpac extra install
