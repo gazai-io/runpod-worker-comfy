@@ -21,7 +21,7 @@ ENV PATH="/opt/venv/bin:$PATH"
 ENV VIRTUAL_ENV="/opt/venv"
 
 # Install torch with CUDA 12.9 support (PyTorch 2.5+ / 3.0+ 官方 cu129 wheel)
-RUN uv pip install torch torchvision torchaudio xformers runpod requests --index-url https://download.pytorch.org/whl/cu129
+RUN uv pip install torch torchvision torchaudio xformers --index-url https://download.pytorch.org/whl/cu129
 
 # Clean up to reduce image size
 RUN apt-get autoremove -y && apt-get clean -y && rm -rf /var/lib/apt/lists/*
@@ -40,6 +40,8 @@ ADD src/extra_model_paths.yaml ./
 
 # Go back to the root
 WORKDIR /
+
+RUN uv pip install runpod requests 
 
 # Add scripts
 ADD src/start.sh src/restore_snapshot.sh src/rp_handler.py test_input.json ./
