@@ -1,5 +1,5 @@
 # Stage 1: Base image with common dependencies
-FROM nvcr.io/nvidia/cuda:12.9.0-cudnn-devel-ubuntu24.04 AS base
+FROM nvcr.io/nvidia/cuda:13.0.2-cudnn-devel-ubuntu24.04 as base
 
 # Prevents prompts from packages asking for user input during installation
 ENV DEBIAN_FRONTEND=noninteractive
@@ -21,22 +21,20 @@ ENV PATH="/opt/venv/bin:$PATH"
 ENV VIRTUAL_ENV="/opt/venv"
 
 # Install torch with CUDA 12.9 support (PyTorch 2.5+ / 3.0+ 官方 cu129 wheel)
-RUN uv pip install torch torchvision torchaudio xformers --index-url https://download.pytorch.org/whl/cu129
+RUN uv pip install torch torchvision torchaudio xformers -U --index-url https://download.pytorch.org/whl/cu130
 
 # Clean up to reduce image size
 RUN apt-get autoremove -y && apt-get clean -y && rm -rf /var/lib/apt/lists/*
 
-# Install comfy-cli
-RUN uv pip install comfy-cli
-
 # Install ComfyUI
-RUN /usr/bin/yes | comfy --workspace /comfyui install --cuda-version 12.9 --nvidia --skip-manager --venv-path /opt/venv
+RUN git clone https://github.com/comfyanonymous/ComfyUI.git /comfyui
 
 # Change working directory to ComfyUI
 WORKDIR /comfyui
 
 # Support for the network volume
 ADD src/extra_model_paths.yaml ./
+RUN uv pip install -r requirements.txt
 
 # Go back to the root
 WORKDIR /
