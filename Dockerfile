@@ -15,9 +15,6 @@ RUN apt-get update && apt-get install -y \
     python3-pip python3-venv git wget libgl1 libglib2.0-0 libsm6 libxrender1 libxext6 \
     && pip install --upgrade uv --break-system-packages \
     && uv venv /opt/venv
-RUN . /opt/venv/bin/activate && \
-    python -m ensurepip --upgrade && \
-    pip install --upgrade --break-system-packages pip setuptools wheel
 
 # pre install comfyui
 RUN git clone https://github.com/comfyanonymous/ComfyUI.git /comfyui
