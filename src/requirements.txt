@@ -1,6 +1,6 @@
 torch==2.8.0
-torchvision==0.15.1
-torchaudio==2.0.2
+torchvision==0.23.0
+torchaudio==2.8.0
 xformers
 runpod 
 requests 
