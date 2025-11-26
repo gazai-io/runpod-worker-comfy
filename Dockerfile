@@ -31,6 +31,7 @@ ADD src/extra_model_paths.yaml /comfyui/extra_model_paths.yaml
 ADD src/requirements.txt /requirements.txt
 ADD src/create_merge_requirement.py /create_merge_requirement.py
 ADD src/start.sh src/restore_snapshot.sh src/rp_handler.py test_input.json ./
+ADD src/recreate_comfyui_yaml.py ./
 
 # Optionally copy the snapshot file
 ADD *snapshot*.json /
