@@ -27,7 +27,7 @@ def search_and_update_yaml():
         for root, dirs, files in os.walk(TARGET_DIR):
             for file in files:
                 if any(file.endswith(ext) for ext in TARGET_EXTENSIONS):
-                    base_dir_rel_path = os.path.relpath(TARGET_DIR, root)
+                    base_dir_rel_path = os.path.relpath(root, TARGET_DIR)
                     paths.append(base_dir_rel_path)
                     break
     else:
