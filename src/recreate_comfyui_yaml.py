@@ -32,6 +32,8 @@ def get_block_yaml(block, block_name):
     base_path = block["base_path"]
     yaml_lines.append("  base_path: " + base_path)
     for model_name in TARGET_model_names:
+        if model_name not in block:
+            continue
         value = block[model_name]
         if "\n" in value:  # 多行路徑，使用區塊標記
             yaml_lines.append(f"  {model_name}: |")
