@@ -1,5 +1,5 @@
 # Stage 1: Base image with common dependencies
-FROM nvcr.io/nvidia/cuda:12.9.0-cudnn-devel-ubuntu24.04 AS base
+FROM nvcr.io/nvidia/cuda:12.8.1-cudnn-devel-ubuntu22.04 AS base
 
 # Prevents prompts from packages asking for user input during installation
 ENV DEBIAN_FRONTEND=noninteractive
@@ -88,7 +88,7 @@ RUN git clone https://github.com/ltdrdata/ComfyUI-Impact-Subpack.git /comfyui/cu
 RUN python3 /create_merge_requirement.py
 
 # Install merged requirements.txt
-RUN uv pip install -U -r "merged_requirements.txt" --index-strategy unsafe-best-match --extra-index-url https://download.pytorch.org/whl/cu129
+RUN uv pip install -U -r "merged_requirements.txt" --index-strategy unsafe-best-match --extra-index-url https://download.pytorch.org/whl/cu128
 
 # Restore the snapshot to install custom nodes
 # RUN /restore_snapshot.sh
