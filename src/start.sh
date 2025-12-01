@@ -4,17 +4,20 @@
 TCMALLOC="$(ldconfig -p | grep -Po "libtcmalloc.so.\d" | head -n 1)"
 export LD_PRELOAD="${TCMALLOC}"
 
+# update comfyui yaml to reflect current storage contents
+source /opt/venv/bin/activate && python3 /recreate_comfyui_yaml.py
+
 # Serve the API and don't shutdown the container
 if [ "$SERVE_API_LOCALLY" == "true" ]; then
     echo "runpod-worker-comfy: Starting ComfyUI"
-    python3 /comfyui/main.py --disable-auto-launch --disable-metadata --listen &
+    source /opt/venv/bin/activate && python3 /comfyui/main.py --disable-auto-launch --disable-metadata --listen --use-pytorch-cross-attention &
 
     echo "runpod-worker-comfy: Starting RunPod Handler"
-    python3 -u /rp_handler.py --rp_serve_api --rp_api_host=0.0.0.0
+    source /opt/venv/bin/activate && python3 -u /rp_handler.py --rp_serve_api --rp_api_host=0.0.0.0
 else
     echo "runpod-worker-comfy: Starting ComfyUI"
-    python3 /comfyui/main.py --disable-auto-launch --disable-metadata &
+    source /opt/venv/bin/activate && python3 /comfyui/main.py --disable-auto-launch --disable-metadata --use-pytorch-cross-attention &
 
     echo "runpod-worker-comfy: Starting RunPod Handler"
-    python3 -u /rp_handler.py
+    source /opt/venv/bin/activate && python3 -u /rp_handler.py
 fi
