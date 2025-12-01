@@ -16,6 +16,7 @@ RUN apt-get update && \
     git \
     wget \
     curl \
+    libgl1 libglib2.0-0 libsm6 libxrender1 libxext6 \
     ca-certificates \
     && add-apt-repository ppa:deadsnakes/ppa && \
     apt-get update && \
