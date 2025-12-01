@@ -13,7 +13,7 @@ ENV CMAKE_BUILD_PARALLEL_LEVEL=8
 # Install Python, git and other necessary tools
 RUN apt-get update && apt-get install -y \
     python3-pip python3-venv git wget libgl1 libglib2.0-0 libsm6 libxrender1 libxext6 \
-    && pip install --upgrade uv --break-system-packages \
+    && pip install --upgrade uv \
     && uv venv /opt/venv
 
 # pre install comfyui
