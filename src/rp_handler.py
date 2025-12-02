@@ -352,7 +352,7 @@ def process_output_images(outputs, job_id, download_file_names):
         
         if os.environ.get("BUCKET_ENDPOINT_URL", False):
             # URL to image in AWS S3
-            image, obj_key = runpod_upload_image(job_id, final_url_path, bucket_name="runpod-temp-bucket")
+            image, obj_key = runpod_upload_image(job_id, final_url_path, bucket_name="runpod-temp")
             print(
                 "runpod-worker-comfy - the image was generated and uploaded to AWS S3"
             )
