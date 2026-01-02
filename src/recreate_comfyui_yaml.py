@@ -6,11 +6,27 @@ TARGET_DIR = '/runpod-volume/huggingface-cache/'
 
 # YAML 檔案路徑（假設位於 /comfyui 目錄下）
 YAML_PATH = '/comfyui/extra_model_paths.yaml'
+# YAML_PATH = './src/extra_model_paths.yaml' # for testing
 
 # allow ext
 TARGET_EXTENSIONS = [".safetensors", ".ckpt", ".pth", ".bin"]
 
-TARGET_model_names = ["checkpoints","clip","clip_vision","configs","controlnet","embeddings","loras","upscale_models","vae","unet","ipadapter","conditioning","text_encoders","instantid","insightface","ultralytics","ultralytics_bbox","ultralytics_segm","llama","sams"]
+TARGET_model_names = [
+    "checkpoints","clip","clip_vision","configs","controlnet","embeddings",
+    "loras","upscale_models","vae","unet","ipadapter","conditioning","text_encoders",
+    "instantid","insightface","ultralytics","ultralytics_bbox","ultralytics_segm","llama","sams"
+]
+
+# 載入現有 YAML 配置
+with open(YAML_PATH, 'r') as f:
+    config = yaml.safe_load(f)
+# 根據現有 YAML 內容，追加TARGET_model_names
+for set_name in config:
+    for model_name in config.get(set_name, {}):
+        if model_name not in TARGET_model_names and model_name != "base_path":
+            TARGET_model_names.append(model_name)
+            print(f"Added model_name from existing yaml: {model_name}")
+
 
 def search_and_update_yaml():
     # 搜索目標資料夾下的子資料夾
