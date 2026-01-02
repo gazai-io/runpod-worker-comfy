@@ -10,6 +10,7 @@ def add_dependencies(dependencies, req_file):
         line = line.split('#')[0].strip()
         if line: # 去除註解和空行
             dependencies.add(line)
+            print(f"add_dependencies req_file: {req_file}, added dependency: {line}")
     return dependencies
 
 def merge_requirements():
