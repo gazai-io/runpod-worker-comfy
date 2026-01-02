@@ -117,7 +117,8 @@ RUN git clone https://github.com/BadCafeCode/masquerade-nodes-comfyui.git /comfy
 RUN git clone https://github.com/kohya-ss/ControlNet-LLLite-ComfyUI.git /comfyui/custom_nodes/ControlNet-LLLite-ComfyUI
 RUN git clone https://github.com/ltdrdata/ComfyUI-Impact-Pack.git /comfyui/custom_nodes/ComfyUI-Impact-Pack
 RUN git clone https://github.com/ltdrdata/ComfyUI-Impact-Subpack.git /comfyui/custom_nodes/ComfyUI-Impact-Subpack
-
+RUN git clone https://github.com/kijai/ComfyUI-WanAnimatePreprocess.git /comfyui/custom_nodes/ComfyUI-WanAnimatePreprocess
+RUN git clone https://github.com/kijai/ComfyUI-WanVideoWrapper.git /comfyui/custom_nodes/ComfyUI-WanVideoWrapper
 
 # merge all requirements.txt to merged_requirements.txt
 RUN python3 /create_merge_requirement.py
