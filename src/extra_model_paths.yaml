@@ -20,3 +20,36 @@ runpod_worker_comfy:
   ultralytics_segm: storage/stable_diffusion/models/ultralytics_segm/
   llama: storage/stable_diffusion/models/llama/
   sams: storage/stable_diffusion/models/sams/
+  detection: storage/stable_diffusion/models/detection/
+  llm: storage/stable_diffusion/models/llm/
+
+runpod_comfy:
+  base_path: /workspace
+  checkpoints: |
+    storage/stable_diffusion/models/unet/
+    storage/stable_diffusion/models/ckpt/
+    storage/stable_diffusion/models/checkpoints/
+  clip: storage/stable_diffusion/models/clip/
+  clip_vision: storage/stable_diffusion/models/clip_vision/
+  configs: storage/stable_diffusion/models/configs/
+  controlnet: storage/stable_diffusion/models/controlnet/
+  embeddings: storage/stable_diffusion/models/embeddings/
+  loras: storage/stable_diffusion/models/lora/
+  upscale_models: storage/stable_diffusion/models/upscale_models/
+  vae: storage/stable_diffusion/models/vae/
+  unet: |
+    storage/stable_diffusion/models/unet/
+    storage/stable_diffusion/models/ckpt/
+    storage/stable_diffusion/models/checkpoints/
+  ipadapter: storage/stable_diffusion/models/ipadapter/
+  conditioning: storage/stable_diffusion/models/conditioning/
+  text_encoders: storage/stable_diffusion/models/text_encoders/
+  instantid: storage/stable_diffusion/models/instantid/
+  insightface: storage/stable_diffusion/models/insightface/
+  ultralytics: storage/stable_diffusion/models/ultralytics/
+  ultralytics_bbox: storage/stable_diffusion/models/ultralytics_bbox/
+  ultralytics_segm: storage/stable_diffusion/models/ultralytics_segm/
+  llama: storage/stable_diffusion/models/llama/
+  sams: storage/stable_diffusion/models/sams/
+  detection: storage/stable_diffusion/models/detection/
+  llm: storage/stable_diffusion/models/llm/
