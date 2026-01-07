@@ -3,6 +3,7 @@ import yaml
 
 # 目標搜索資料夾（可依環境調整）
 TARGET_DIR = '/runpod-volume/huggingface-cache/'
+# TARGET_DIR = r"C:\Users\user\Documents\GitHub\ComfyUI\models" # for testing
 
 # YAML 檔案路徑（假設位於 /comfyui 目錄下）
 YAML_PATH = '/comfyui/extra_model_paths.yaml'
@@ -76,10 +77,11 @@ def output_yaml(paths, yaml_path=YAML_PATH):
     
     # 更新 YAML 結構
     for model_name in TARGET_model_names:
-        if(len(paths) == 1):
-            config["search_model"][model_name] = paths[0]
-        elif(len(paths) > 1):
-            config["search_model"][model_name] = "/\n".join(p for p in sorted(paths)) + "/\n"  # 調整縮排為兩個空格
+        if len(paths) == 1:
+            search_model[model_name] = paths[0]
+        elif len(paths) > 1:
+            # 調整為 YAML 多行格式，確保正確縮排（原程式碼可能有誤）
+            search_model[model_name] = "\n    " + "\n    ".join(p for p in sorted(paths))
     
     # 建立新有序配置，將 search_model 置於首位
     new_config = {}
