@@ -1,6 +1,20 @@
 runpod_worker_comfy:
   base_path: /runpod-volume
-  checkpoints: storage/stable_diffusion/models/ckpt/
+  checkpoints: |
+    storage/stable_diffusion/models/ckpt/
+    storage/stable_diffusion/models/unet/
+    storage/stable_diffusion/models/checkpoints/
+    storage/stable_diffusion/models/diffusion_models/
+  diffusion_models: |
+    storage/stable_diffusion/models/ckpt/
+    storage/stable_diffusion/models/unet/
+    storage/stable_diffusion/models/checkpoints/
+    storage/stable_diffusion/models/diffusion_models/
+  unet: |
+    storage/stable_diffusion/models/ckpt/
+    storage/stable_diffusion/models/unet/
+    storage/stable_diffusion/models/checkpoints/
+    storage/stable_diffusion/models/diffusion_models/ 
   clip: storage/stable_diffusion/models/clip/
   clip_vision: storage/stable_diffusion/models/clip_vision/
   configs: storage/stable_diffusion/models/configs/
@@ -22,6 +36,7 @@ runpod_worker_comfy:
   sams: storage/stable_diffusion/models/sams/
   detection: storage/stable_diffusion/models/detection/
   llm: storage/stable_diffusion/models/llm/
+  
 
 runpod_comfy:
   base_path: /workspace
@@ -29,6 +44,7 @@ runpod_comfy:
     storage/stable_diffusion/models/unet/
     storage/stable_diffusion/models/ckpt/
     storage/stable_diffusion/models/checkpoints/
+    storage/stable_diffusion/models/diffusion_models/
   clip: storage/stable_diffusion/models/clip/
   clip_vision: storage/stable_diffusion/models/clip_vision/
   configs: storage/stable_diffusion/models/configs/
@@ -41,6 +57,7 @@ runpod_comfy:
     storage/stable_diffusion/models/unet/
     storage/stable_diffusion/models/ckpt/
     storage/stable_diffusion/models/checkpoints/
+    storage/stable_diffusion/models/diffusion_models/
   ipadapter: storage/stable_diffusion/models/ipadapter/
   conditioning: storage/stable_diffusion/models/conditioning/
   text_encoders: storage/stable_diffusion/models/text_encoders/
@@ -53,3 +70,4 @@ runpod_comfy:
   sams: storage/stable_diffusion/models/sams/
   detection: storage/stable_diffusion/models/detection/
   llm: storage/stable_diffusion/models/llm/
+  diffusion_models: storage/stable_diffusion/models/diffusion_models/
