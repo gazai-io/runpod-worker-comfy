@@ -67,27 +67,39 @@ def output_yaml(paths, yaml_path=YAML_PATH):
             config = yaml.safe_load(f)
     else:
         config = {}
-    config["search_model"] = {}
-    config["search_model"]["base_path"] = os.path.abspath(TARGET_DIR)
-
-    # 更新 YAML 結構
-    for model_name in TARGET_model_names:
-        if(len(paths) == 1):
-            config["search_model"][model_name] = paths[0]
-        elif(len(paths) > 1):
-            config["search_model"][model_name] = "/\n".join(p for p in sorted(paths)) + "/\n"  # 調整縮排為兩個空格
     
-    # 手動建構 YAML 格式字串 search_model 區塊
+    # 更新 search_model 區塊
+    search_model = {}  # 初始化或提取原有 search_model
+    if "search_model" in config:
+        search_model = config["search_model"]
+    search_model["base_path"] = os.path.abspath(TARGET_DIR)
+    
+    # 更新 YAML 結構中的模型路徑
+    for model_name in TARGET_model_names:
+        if len(paths) == 1:
+            search_model[model_name] = paths[0]
+        elif len(paths) > 1:
+            # 調整為 YAML 多行格式，確保正確縮排（原程式碼可能有誤）
+            search_model[model_name] = "|\n    " + "\n    ".join(p for p in sorted(paths))
+    
+    # 建立新有序配置，將 search_model 置於首位
+    new_config = {}
+    new_config["search_model"] = search_model
+    for key, value in config.items():
+        if key != "search_model":
+            new_config[key] = value
+    
+    # 手動建構 YAML 格式字串（依新順序處理區塊）
     block_yaml_lines = []
-    for block_name in config:
-        block_yaml_lines.extend(get_block_yaml(config[block_name], block_name))
+    for block_name in new_config:
+        block_yaml_lines.extend(get_block_yaml(new_config[block_name], block_name))
     yaml_content = "\n".join(block_yaml_lines) + "\n"
-
+    
     # 將 YAML 格式內容寫入 YAML 檔案
     with open(yaml_path, 'w', encoding='utf-8') as f:
         f.write(yaml_content)
     print(f"已更新 YAML 檔案（YAML 格式）：{yaml_path}")
-        
+    
     # 輸出最終 YAML 內容
     print("\n最終 YAML 內容：\n")
     with open(yaml_path, 'r', encoding='utf-8') as f:
