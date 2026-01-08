@@ -35,7 +35,12 @@ runpod_worker_comfy:
   llama: storage/stable_diffusion/models/llama/
   sams: storage/stable_diffusion/models/sams/
   detection: storage/stable_diffusion/models/detection/
-  llm: storage/stable_diffusion/models/llm/
+  llm: | 
+    storage/stable_diffusion/models/llm/
+    storage/stable_diffusion/models/LLM/
+  LLM: |
+    storage/stable_diffusion/models/llm/
+    storage/stable_diffusion/models/LLM/
   
 
 runpod_comfy:
@@ -69,5 +74,10 @@ runpod_comfy:
   llama: storage/stable_diffusion/models/llama/
   sams: storage/stable_diffusion/models/sams/
   detection: storage/stable_diffusion/models/detection/
-  llm: storage/stable_diffusion/models/llm/
+  llm: | 
+    storage/stable_diffusion/models/llm/
+    storage/stable_diffusion/models/LLM/
+  LLM: |
+    storage/stable_diffusion/models/llm/
+    storage/stable_diffusion/models/LLM/
   diffusion_models: storage/stable_diffusion/models/diffusion_models/
