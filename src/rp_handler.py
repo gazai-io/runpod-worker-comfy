@@ -497,7 +497,7 @@ def handler(job):
     )
 
     # Upload images if they exist
-    upload_result = upload_images(images)
+    upload_result = upload_images(new_images)
 
     if upload_result["status"] == "error":
         return upload_result
