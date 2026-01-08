@@ -1,48 +1,54 @@
 {
   "input": {
     "workflow": {
-  "1": {
-    "inputs": {
-      "video": "test.mp4",
-      "force_rate": 0,
-      "custom_width": 0,
-      "custom_height": 0,
-      "frame_load_cap": 0,
-      "skip_first_frames": 0,
-      "select_every_nth": 1,
-      "format": "AnimateDiff"
+      "1": {
+        "inputs": {
+          "video": "test.mp4",
+          "force_rate": 0,
+          "custom_width": 0,
+          "custom_height": 0,
+          "frame_load_cap": 0,
+          "skip_first_frames": 0,
+          "select_every_nth": 1,
+          "format": "AnimateDiff"
+        },
+        "class_type": "VHS_LoadVideo",
+        "_meta": {
+          "title": "Load Video (Upload) 🎥🅥🅗🅢"
+        }
+      },
+      "2": {
+        "inputs": {
+          "frame_rate": 24,
+          "loop_count": 0,
+          "filename_prefix": "AnimateDiff",
+          "format": "image/gif",
+          "pingpong": false,
+          "save_output": true,
+          "images": [
+            "1",
+            0
+          ],
+          "audio": [
+            "1",
+            2
+          ]
+        },
+        "class_type": "VHS_VideoCombine",
+        "_meta": {
+          "title": "Video Combine 🎥🅥🅗🅢"
+        }
+      }
     },
-    "class_type": "VHS_LoadVideo",
-    "_meta": {
-      "title": "Load Video (Upload) 🎥🅥🅗🅢"
-    }
-  },
-  "2": {
-    "inputs": {
-      "frame_rate": 24,
-      "loop_count": 0,
-      "filename_prefix": "AnimateDiff",
-      "format": "image/gif",
-      "pingpong": false,
-      "save_output": true,
-      "images": [
-        "1",
-        0
-      ],
-      "audio": [
-        "1",
-        2
-      ]
-    },
-    "class_type": "VHS_VideoCombine",
-    "_meta": {
-      "title": "Video Combine 🎥🅥🅗🅢"
-    }
-  }
-}
-    ,
-    "images":[
-        {"name": "test.mp4", "type":"s3", "image": {"bucket_name": "gazai", "object_key": "videos/clwyxv3h30000fh6yiygggtle/00121c91-484f-4eb7-bdf3-7ed15c7185ad/output.mp4"}}
+    "images": [
+      {
+        "name": "test.mp4",
+        "type": "s3",
+        "image": {
+          "bucket_name": "gazai",
+          "object_key": "videos/clwyxv3h30000fh6yiygggtle/00121c91-484f-4eb7-bdf3-7ed15c7185ad/output.mp4"
+        }
+      }
     ]
   }
 }
