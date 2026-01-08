@@ -42,7 +42,7 @@
 }
     ,
     "images":[
-        {"name": "test.mp4", "image": [{"bucket_name": "gazai", "object_key": "videos/clwyxv3h30000fh6yiygggtle/00121c91-484f-4eb7-bdf3-7ed15c7185ad/output.mp4"}]}
+        {"name": "test.mp4", "type":"s3", "image": {"bucket_name": "gazai", "object_key": "videos/clwyxv3h30000fh6yiygggtle/00121c91-484f-4eb7-bdf3-7ed15c7185ad/output.mp4"}}
     ]
   }
 }
