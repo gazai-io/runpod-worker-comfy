@@ -4,6 +4,7 @@ torchaudio==2.8.0
 xformers
 runpod 
 requests 
+boto3
 
 # 短期解法 強制指定 numba 和 llvmlite 版本以解決相容性問題
 numba>=0.59.0

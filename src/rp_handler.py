@@ -2,7 +2,7 @@ import runpod
 from runpod.serverless.utils import rp_upload
 import json
 import urllib.request
-import urllib.parse
+import boto3
 import time
 import os
 import requests
@@ -212,7 +212,6 @@ def base64_encode(file_path):
         encoded_string = base64.b64encode(file.read()).decode("utf-8")
         return f"{encoded_string}"
 
-
 def base64_encode_jpeg(img_path):
     # Open the PNG image
     with Image.open(img_path) as img:
@@ -378,6 +377,68 @@ def process_output_images(outputs, job_id, download_file_names):
         "download_files": download_files,
     }
 
+def retry_loop(func, retrys=3, timeout=10, wait_time=2, *args, **kwargs):
+    fail_messages = []
+    for attempt in range(retrys):
+        try:
+            result = func(*args, **kwargs)
+            return result
+        except Exception as e:
+            print(f"Attempt {attempt + 1} failed: {e}")
+            fail_messages.append(str(e))
+            if attempt == retrys - 1:
+                raise Exception(f"Failed after {retrys} retries, every retry timeout {timeout} seconds. Last error message: {str(e)}")
+            time.sleep(wait_time)  # Wait before retrying
+
+def downlaod_image_from_url(image_url, retrys=3, timeout=10):
+    """
+    Download an image from a given URL and return it as a PIL Image object.
+
+    Args:
+        image_url (str): The URL of the image to download.
+    Returns:
+        base64 encoded string of the image.
+    """
+    def download():
+        response = requests.get(image_url, timeout=timeout)
+        response.raise_for_status()  # Raise an error for bad status codes
+        return response.content
+
+    data = retry_loop(download, retrys=retrys, timeout=timeout)  
+    return base64.b64encode(data).decode('utf-8')
+
+def download_image_from_s3(s3_obj, retrys=3, timeout=10, temp_file_dir="/s3_tmp"):
+    """
+    Download an image from S3 using a presigned URL and return it as a PIL Image object.
+
+    Args:
+        obj_key (str): The S3 object key of the image to download.
+    Returns:
+        base64 encoded string of the image.
+    """
+    bucket_name, object_key = s3_obj.get("bucket_name", None), s3_obj.get("object_key", None)
+    if not bucket_name or not object_key:
+        raise Exception("Invalid S3 object information provided. bucket_name or object_key is missing")
+    os.makedirs(temp_file_dir, exist_ok=True)
+
+    def download():
+        s3_client = boto3.client('s3')
+        response = s3_client.get_object(Bucket=bucket_name, Key=object_key)
+        return response['Body'].read()
+    data = retry_loop(download, retrys=retrys, timeout=timeout)    
+    return base64.b64encode(data).decode('utf-8')
+
+def save_base64_image_to_file(image_base64, file_path):
+    """
+    Save a base64 encoded image to a file.
+
+    Args:
+        image_base64 (str): The base64 encoded image string.
+        file_path (str): The path where the image will be saved.
+    """
+    image_data = base64.b64decode(image_base64)
+    with open(file_path, "wb") as file:
+        file.write(image_data)
 
 def handler(job):
     """
@@ -404,6 +465,30 @@ def handler(job):
     images = validated_data.get("images")
     download_file_names = validated_data.get("download_file_names") or []
 
+    # donload images
+    new_images = []
+    if images is not None:
+        for image in images:
+            image_type = image.get("type", "base64")
+            if image_type == "url":
+                image_base64 = downlaod_image_from_url(image["image"])
+                new_images.append({
+                    "name": image["name"],
+                    "image": image_base64,
+                })
+            elif image_type == "base64":
+                new_images.append({
+                    "name": image["name"],
+                    "image": image["image"],
+                })
+            elif image_type == "s3":
+                image_base64 = download_image_from_s3(image["image"])
+                new_images.append({
+                    "name": image["name"],
+                    "image": image_base64,
+                })
+            else:
+                raise ValueError(f"Unsupported image type: {image_type} in image filename {image['name']}")
     # Make sure that the ComfyUI API is available
     check_server(
         f"http://{COMFY_HOST}",
@@ -471,3 +556,16 @@ def handler(job):
 # Start the handler only if this script is run directly
 if __name__ == "__main__":
     runpod.serverless.start({"handler": handler})
+
+    # test download_image_from_s3
+    # s3_obj = {"bucket_name": "gazai", "object_key": "videos/clwyxv3h30000fh6yiygggtle/00121c91-484f-4eb7-bdf3-7ed15c7185ad/output.mp4"}
+    # image_base64 = download_image_from_s3(s3_obj)
+    # save_base64_image_to_file(image_base64, "output.mp4")
+    
+    # test downlaod_image_from_url
+    # image_url = "https://www.gazai.ai/images/gazai-chan-chibi-no-bg.png"
+    # image_base64 = downlaod_image_from_url(image_url)
+    # save_base64_image_to_file(image_base64, "test.png")
+
+
+
