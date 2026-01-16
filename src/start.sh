@@ -10,13 +10,13 @@ source /opt/venv/bin/activate && python3 /recreate_comfyui_yaml.py
 # Serve the API and don't shutdown the container
 if [ "$SERVE_API_LOCALLY" == "true" ]; then
     echo "runpod-worker-comfy: Starting ComfyUI"
-    source /opt/venv/bin/activate && python3 /comfyui/main.py --disable-auto-launch --disable-metadata --listen --use-pytorch-cross-attention &
+    source /opt/venv/bin/activate && python3 /comfyui/main.py --disable-auto-launch --disable-metadata --listen --use-pytorch-cross-attention --cuda-device $CUDA_VISIBLE_DEVICES --default-device $CUDA_VISIBLE_DEVICES &
 
     echo "runpod-worker-comfy: Starting RunPod Handler"
     source /opt/venv/bin/activate && python3 -u /rp_handler.py --rp_serve_api --rp_api_host=0.0.0.0
 else
     echo "runpod-worker-comfy: Starting ComfyUI"
-    source /opt/venv/bin/activate && python3 /comfyui/main.py --disable-auto-launch --disable-metadata --use-pytorch-cross-attention &
+    source /opt/venv/bin/activate && python3 /comfyui/main.py --disable-auto-launch --disable-metadata --use-pytorch-cross-attention --cuda-device $CUDA_VISIBLE_DEVICES --default-device $CUDA_VISIBLE_DEVICES &
 
     echo "runpod-worker-comfy: Starting RunPod Handler"
     source /opt/venv/bin/activate && python3 -u /rp_handler.py
