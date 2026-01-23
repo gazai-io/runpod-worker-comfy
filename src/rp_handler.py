@@ -519,8 +519,7 @@ def handler(job):
             history = get_history(prompt_id)
 
             if prompt_id in history and history[prompt_id].get("status"):
-                print(history[prompt_id].get("status").get("messages"))
-                runpod.serverless.progress_update(job, message)
+                runpod.serverless.progress_update(job, history[prompt_id].get("status").get("messages"))
 
             # Exit the loop if we have found the history
             is_finished = False
