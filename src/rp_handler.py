@@ -197,7 +197,6 @@ def get_history(prompt_id):
     with urllib.request.urlopen(f"http://{COMFY_HOST}/history/{prompt_id}") as response:
         return json.loads(response.read())
 
-
 def base64_encode(file_path):
     """
     Returns base64 encoded file.
@@ -281,7 +280,7 @@ def runpod_upload_image(
 
     return presigned_url, f"{bucket}/{job_id}/{image_name}{file_extension}"
 
-def process_output_images(outputs, job_id, download_file_names):
+def process_output_images(outputs, job_id, download_file_names, return_format="url"):
     """
     This function takes the "outputs" from image generation and the job ID,
     then determines the correct way to return the image, either as a direct URL
@@ -348,8 +347,7 @@ def process_output_images(outputs, job_id, download_file_names):
                 "status": "error",
                 "message": f"the image does not exist in the specified output folder: {local_image_path}",
             }
-        
-        if os.environ.get("BUCKET_ENDPOINT_URL", False):
+        if return_format == "url" and os.environ.get("BUCKET_ENDPOINT_URL", False):
             # URL to image in AWS S3
             image, obj_key = runpod_upload_image(job_id, final_url_path, bucket_name="runpod-temp")
             print(
@@ -454,6 +452,7 @@ def handler(job):
         dict: A dictionary containing either an error message or a success status with generated images.
     """
     job_input = job["input"]
+    return_format = job_input.get("return_format", "url")
 
     # Make sure that the input is valid
     validated_data, error_message = validate_input(job_input)
@@ -546,7 +545,7 @@ def handler(job):
         return {"error": f"Error waiting for image generation: {str(e)}"}
 
     # Get the generated image and return it as URL in an AWS bucket or as base64
-    images_result = process_output_images(history[prompt_id].get("outputs"), job["id"], download_file_names)
+    images_result = process_output_images(history[prompt_id].get("outputs"), job["id"], download_file_names, return_format=return_format)
 
     result = {**images_result, "refresh_worker": REFRESH_WORKER}
 
