@@ -438,6 +438,7 @@ def save_base64_image_to_file(image_base64, file_path):
     with open(file_path, "wb") as file:
         file.write(image_data)
 
+
 def handler(job):
     """
     The main function that handles a job of generating an image.
@@ -488,6 +489,7 @@ def handler(job):
                 })
             else:
                 raise ValueError(f"Unsupported image type: {image_type} in image filename {image['name']}")
+    
     # Make sure that the ComfyUI API is available
     check_server(
         f"http://{COMFY_HOST}",
@@ -518,6 +520,7 @@ def handler(job):
 
             if prompt_id in history and history[prompt_id].get("status"):
                 print(history[prompt_id].get("status").get("messages"))
+                runpod.serverless.progress_update(job, message)
 
             # Exit the loop if we have found the history
             is_finished = False
