@@ -539,7 +539,7 @@ def queue_comfyui(images, workflow):
     start_time = time.time()
     try:
         while time.time() - start_time < COMFY_POLLING_TIMEOUT_MS / 1000:
-            
+            print(time.time() - start_time)
             last_data = None
             try:
                 last_data = ws.recv()  # 接收一個消息
