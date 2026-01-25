@@ -635,7 +635,7 @@ def handler(job):
             return {"error": progress["error"]}
         elif "success" in progress:
             break
-        else:
+        elif "message" in progress:
             print(f"progress: {progress}")
             runpod.serverless.progress_update(job, progress)
     progress = progress["success"]
