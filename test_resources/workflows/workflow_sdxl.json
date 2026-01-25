@@ -1,112 +1,185 @@
 
 {
   "input": {
-    "workflow": {
-      "3": {
-        "inputs": {
-          "seed": 156680208700286,
-          "steps": 20,
-          "cfg": 8,
-          "sampler_name": "euler",
-          "scheduler": "normal",
-          "denoise": 1,
-          "model": [
-            "4",
-            0
-          ],
-          "positive": [
-            "6",
-            0
-          ],
-          "negative": [
-            "7",
-            0
-          ],
-          "latent_image": [
-            "5",
-            0
-          ]
-        },
-        "class_type": "KSampler",
-        "_meta": {
-          "title": "K采样器"
-        }
-      },
-      "4": {
-        "inputs": {
-          "ckpt_name": "sd3.5_large.safetensors"
-        },
-        "class_type": "CheckpointLoaderSimple",
-        "_meta": {
-          "title": "Checkpoint加载器（简易）"
-        }
-      },
-      "5": {
-        "inputs": {
-          "width": 1024,
-          "height": 1024,
-          "batch_size": 1
-        },
-        "class_type": "EmptyLatentImage",
-        "_meta": {
-          "title": "空Latent图像"
-        }
-      },
-      "6": {
-        "inputs": {
-          "text": "beautiful scenery nature glass bottle landscape, , purple galaxy bottle,",
-          "clip": [
-            "4",
-            1
-          ]
-        },
-        "class_type": "CLIPTextEncode",
-        "_meta": {
-          "title": "CLIP文本编码"
-        }
-      },
-      "7": {
-        "inputs": {
-          "text": "text, watermark",
-          "clip": [
-            "4",
-            1
-          ]
-        },
-        "class_type": "CLIPTextEncode",
-        "_meta": {
-          "title": "CLIP文本编码"
-        }
-      },
-      "8": {
-        "inputs": {
-          "samples": [
-            "3",
-            0
-          ],
-          "vae": [
-            "4",
-            2
-          ]
-        },
-        "class_type": "VAEDecode",
-        "_meta": {
-          "title": "VAE解码"
-        }
-      },
-      "9": {
-        "inputs": {
-          "filename_prefix": "ComfyUI",
-          "images": [
-            "8",
-            0
-          ]
-        },
-        "class_type": "SaveImage",
-        "_meta": {
-          "title": "Image Save"
-        }
-      }
+    "workflow": 
+
+
+
+{
+  "4": {
+    "inputs": {
+      "ckpt_name": "waiIllustriousSDXL_v140.safetensors"
+    },
+    "class_type": "CheckpointLoaderSimple",
+    "_meta": {
+      "title": "Load Checkpoint - BASE"
     }
+  },
+  "5": {
+    "inputs": {
+      "width": 800,
+      "height": 1280,
+      "batch_size": 1
+    },
+    "class_type": "EmptyLatentImage",
+    "_meta": {
+      "title": "空Latent图像"
+    }
+  },
+  "6": {
+    "inputs": {
+      "text": "masterpiece, best quality, highres, 8K, ultra detailed,anime style,\n1girl, full body,\nside view, low angle,\n",
+      "clip": [
+        "4",
+        1
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "CLIP文本编码"
+    }
+  },
+  "7": {
+    "inputs": {
+      "text": "worst quality, multiple views, bad quality, low quality, lowres, displeasing, very displeasing, bad anatomy, bad hands, scan artifacts, monochrome, greyscale, signature, twitter username, jpeg artifacts, 2koma, 4koma, guro, extra digits, fewer digits\",",
+      "clip": [
+        "4",
+        1
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "CLIP文本编码"
+    }
+  },
+  "17": {
+    "inputs": {
+      "samples": [
+        "20",
+        0
+      ],
+      "vae": [
+        "4",
+        2
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE解码"
+    }
+  },
+  "19": {
+    "inputs": {
+      "filename_prefix": "ComfyUI",
+      "images": [
+        "17",
+        0
+      ]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "保存图像"
+    }
+  },
+  "20": {
+    "inputs": {
+      "add_noise": "enable",
+      "noise_seed": 522070264130130,
+      "steps": 40,
+      "cfg": 7,
+      "sampler_name": "deis",
+      "scheduler": "exponential",
+      "start_at_step": 0,
+      "end_at_step": 40,
+      "return_with_leftover_noise": "disable",
+      "model": [
+        "4",
+        0
+      ],
+      "positive": [
+        "6",
+        0
+      ],
+      "negative": [
+        "7",
+        0
+      ],
+      "latent_image": [
+        "23",
+        0
+      ]
+    },
+    "class_type": "KSamplerAdvanced",
+    "_meta": {
+      "title": "KSampler (Advanced) - BASE"
+    }
+  },
+  "21": {
+    "inputs": {
+      "samples": [
+        "23",
+        0
+      ],
+      "vae": [
+        "4",
+        2
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE解码"
+    }
+  },
+  "22": {
+    "inputs": {
+      "filename_prefix": "ComfyUI",
+      "images": [
+        "21",
+        0
+      ]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "保存图像"
+    }
+  },
+  "23": {
+    "inputs": {
+      "add_noise": "enable",
+      "noise_seed": 522070264130130,
+      "steps": 40,
+      "cfg": 7,
+      "sampler_name": "deis",
+      "scheduler": "exponential",
+      "start_at_step": 0,
+      "end_at_step": 40,
+      "return_with_leftover_noise": "disable",
+      "model": [
+        "4",
+        0
+      ],
+      "positive": [
+        "6",
+        0
+      ],
+      "negative": [
+        "7",
+        0
+      ],
+      "latent_image": [
+        "5",
+        0
+      ]
+    },
+    "class_type": "KSamplerAdvanced",
+    "_meta": {
+      "title": "KSampler (Advanced) - BASE"
+    }
+  }
+}
+
+    
+
+
   }
 }
