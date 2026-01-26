@@ -482,7 +482,10 @@ def websocket_receiver(ws):
         try:
             out = ws.recv()  # 接收一個消息
             with lock:
-                last_data_shared = out  # 更新為最新（最後）的一個
+                out_data = json.loads(out)
+                out_type = out_data.get("type", "")
+                if out_type in ["progress_state"]:
+                    last_data_shared = out_data  # 更新為最新（最後）的一個
         except websocket.WebSocketTimeoutException:
             # 超時時不break，而是繼續循環（持續接收）
             pass
@@ -531,33 +534,19 @@ def queue_comfyui(images, workflow):
         yield {"error": f"Error queuing workflow: {str(e)}"}
         return
     
-    # # start websocket receiver thread
-    # receiver_thread = threading.Thread(target=websocket_receiver, args=(ws,), daemon=True)
-    # receiver_thread.start()
+    # start websocket receiver thread
+    receiver_thread = threading.Thread(target=websocket_receiver, args=(ws,), daemon=True)
+    receiver_thread.start()
 
     # Poll for completion
     print(f"runpod-worker-comfy - wait until image generation is complete")
     start_time = time.time()
     try:
         while time.time() - start_time < COMFY_POLLING_TIMEOUT_MS / 1000:
-            last_data = None
-            try:
-                last_data = ws.recv()  # 接收一個消息
-            except websocket.WebSocketTimeoutException:
-                # 超時時不break，而是繼續循環（持續接收）
-                pass
-            except websocket.WebSocketConnectionClosedException:
-                print("WebSocket connection closed in receiver thread.")
-                break
-            except Exception as e:
-                traceback.print_exc()
-                print(f"WebSocket error: {str(e)}")
-                raise e
-            if last_data:
-                out_data = json.loads(last_data)
+            out_data = get_last_websocket_data()
+            if out_data:
                 out_type = out_data.get("type", "")
-                if out_type in ["progress_state"]:
-                    # 解析進度資料並回傳
+                if out_type in ["progress_state"]: # 解析進度資料並回傳
                     total_nodes = len(workflow)
                     completed_nodes = [node_id for node_id in out_data["data"]["nodes"] if out_data["data"]["nodes"][node_id].get("state") == "finished"]
                     running_nodes = [node_id for node_id in out_data["data"]["nodes"] if out_data["data"]["nodes"][node_id].get("state") == "running"]
