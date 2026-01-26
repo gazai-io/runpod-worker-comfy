@@ -512,6 +512,20 @@ def websocket_receiver(ws):
         traceback.print_exc()  # 改用print_exc來打印堆棧
         print(f"WebSocket error: {str(e)}")
     return None
+def websocket_connector(client_id, max_retries=20, interval_ms=100):
+    ws = websocket.WebSocket()
+    retries = 0
+    while retries < max_retries:
+        try:
+            ws.connect("ws://{}/ws?clientId={}".format(COMFY_HOST, client_id))
+            ws.settimeout(0.1)
+            return ws
+        except Exception as e:
+            print(f"Error connecting to WebSocket: {str(e)}. Retrying...")
+            time.sleep(interval_ms / 1000)
+            retries += 1
+    raise Exception("Max retries reached while connecting to WebSocket")
+
 
 def queue_comfyui(images, workflow):
     # Make sure that the ComfyUI API is available
@@ -530,9 +544,7 @@ def queue_comfyui(images, workflow):
     
     # create websocket client id
     client_id=str(uuid.uuid4())
-    ws = websocket.WebSocket()
-    ws.connect("ws://{}/ws?clientId={}".format(COMFY_HOST, client_id))
-    ws.settimeout(0.1)
+    ws = websocket_connector(client_id)
 
     # Queue the workflow
     try:
