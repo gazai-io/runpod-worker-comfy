@@ -645,7 +645,7 @@ def handler(job):
     images_result = process_output_images(progress, job["id"], download_file_names, return_format=return_format)
 
     result = {**images_result, "refresh_worker": REFRESH_WORKER}
-
+    print(f"output result: {result}")
     return result
 
 
