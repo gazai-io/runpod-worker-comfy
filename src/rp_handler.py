@@ -547,8 +547,6 @@ def queue_comfyui(images, workflow):
     
     # create websocket client id
     client_id=str(uuid.uuid4())
-    ws = websocket_connector(client_id)
-
     # Queue the workflow
     try:
         queued_workflow = queue_workflow(workflow, client_id=client_id)
