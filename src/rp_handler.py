@@ -512,7 +512,7 @@ def websocket_receiver(ws):
         traceback.print_exc()  # 改用print_exc來打印堆棧
         print(f"WebSocket error: {str(e)}")
     return None
-def websocket_connector(client_id, max_retries=20, interval_ms=100):
+def websocket_connector(client_id, max_retries=1, interval_ms=100):
     ws = websocket.WebSocket()
     retries = 0
     while retries < max_retries:
@@ -562,24 +562,34 @@ def queue_comfyui(images, workflow):
     # Poll for completion
     print(f"runpod-worker-comfy - wait until image generation is complete")
     start_time = time.time()
+    ws = None
     try:
         while time.time() - start_time < COMFY_POLLING_TIMEOUT_MS / 1000:
-            out_data = websocket_receiver(ws)
-            if out_data:
-                out_type = out_data.get("type", "")
-                if out_type in ["progress_state"]: # 解析進度資料並回傳
-                    total_nodes = len(workflow)
-                    completed_nodes = [node_id for node_id in out_data["data"]["nodes"] if out_data["data"]["nodes"][node_id].get("state") == "finished"]
-                    running_nodes = [node_id for node_id in out_data["data"]["nodes"] if out_data["data"]["nodes"][node_id].get("state") == "running"]
-                    running_nodes_maxs = [out_data["data"]["nodes"][node_id].get("max", 1) for node_id in running_nodes]
-                    running_nodes_values = [out_data["data"]["nodes"][node_id].get("value", 0) for node_id in running_nodes]
-                    yield {"message": {
-                        "raw": out_data, 
-                        "progress_1_value": len(completed_nodes),
-                        "progress_1_max": total_nodes, 
-                        "progress_2_value": sum(running_nodes_values) if len(running_nodes) > 0 else 0,
-                        "progress_2_max": sum(running_nodes_maxs) if len(running_nodes) > 0 else 1,
-                    }}
+
+            # 避免進度條影響結束判斷 ws 採有連上就接收 沒有就繼續執行結束判斷
+            if ws is None:
+                try:
+                    ws = websocket_connector(client_id)
+                except Exception as e:
+                    ws = None
+                    print(f"Error reconnecting to WebSocket: {str(e)}. Retrying...")
+            if ws is not None:
+                out_data = websocket_receiver(ws)
+                if out_data:
+                    out_type = out_data.get("type", "")
+                    if out_type in ["progress_state"]: # 解析進度資料並回傳
+                        total_nodes = len(workflow)
+                        completed_nodes = [node_id for node_id in out_data["data"]["nodes"] if out_data["data"]["nodes"][node_id].get("state") == "finished"]
+                        running_nodes = [node_id for node_id in out_data["data"]["nodes"] if out_data["data"]["nodes"][node_id].get("state") == "running"]
+                        running_nodes_maxs = [out_data["data"]["nodes"][node_id].get("max", 1) for node_id in running_nodes]
+                        running_nodes_values = [out_data["data"]["nodes"][node_id].get("value", 0) for node_id in running_nodes]
+                        yield {"message": {
+                            "raw": out_data, 
+                            "progress_1_value": len(completed_nodes),
+                            "progress_1_max": total_nodes, 
+                            "progress_2_value": sum(running_nodes_values) if len(running_nodes) > 0 else 0,
+                            "progress_2_max": sum(running_nodes_maxs) if len(running_nodes) > 0 else 1,
+                        }}
 
             # Exit the loop if we have found the history
             history = get_history(prompt_id)
@@ -610,8 +620,9 @@ def queue_comfyui(images, workflow):
         yield {"error": f"Error waiting for image generation: {str(e)}"}
 
     # Close the websocket connection
-    ws.close()
-    
+    if ws is not None:
+        ws.close()
+
 def handler(job):
     """
     The main function that handles a job of generating an image.
