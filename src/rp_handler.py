@@ -495,7 +495,6 @@ def websocket_receiver(ws):
         except Exception as e:
             traceback.print_exc()  # 改用print_exc來打印堆棧
             print(f"WebSocket error: {str(e)}")
-            # 這裡可以選擇raise或繼續，依需求而定；假設繼續運行
             raise e
 def get_last_websocket_data():
     global last_data_shared
