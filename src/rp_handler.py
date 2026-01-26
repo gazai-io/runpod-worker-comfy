@@ -24,6 +24,7 @@ COMFY_API_AVAILABLE_INTERVAL_MS = int(os.environ.get("COMFY_API_AVAILABLE_INTERV
 COMFY_API_AVAILABLE_MAX_RETRIES = int(os.environ.get("COMFY_API_AVAILABLE_MAX_RETRIES", 500))
 # Time to wait between poll attempts in milliseconds
 COMFY_POLLING_TIMEOUT_MS = int(os.environ.get("COMFY_POLLING_TIMEOUT_MS", 1200000))
+COMFY_POLLING_INTERVAL_MS = int(os.environ.get("COMFY_POLLING_INTERVAL_MS", 100))
 # Host where ComfyUI is running
 COMFY_HOST = "127.0.0.1:8188"
 # Enforce a clean state after each job is done
@@ -530,16 +531,15 @@ def queue_comfyui(images, workflow):
         yield {"error": f"Error queuing workflow: {str(e)}"}
         return
     
-    # start websocket receiver thread
-    receiver_thread = threading.Thread(target=websocket_receiver, args=(ws,), daemon=True)
-    receiver_thread.start()
+    # # start websocket receiver thread
+    # receiver_thread = threading.Thread(target=websocket_receiver, args=(ws,), daemon=True)
+    # receiver_thread.start()
 
     # Poll for completion
     print(f"runpod-worker-comfy - wait until image generation is complete")
     start_time = time.time()
     try:
         while time.time() - start_time < COMFY_POLLING_TIMEOUT_MS / 1000:
-            print(time.time() - start_time)
             last_data = None
             try:
                 last_data = ws.recv()  # 接收一個消息
@@ -570,6 +570,7 @@ def queue_comfyui(images, workflow):
                         "progress_2_value": sum(running_nodes_values) if len(running_nodes) > 0 else 0,
                         "progress_2_max": sum(running_nodes_maxs) if len(running_nodes) > 0 else 1,
                     }}
+
             # Exit the loop if we have found the history
             history = get_history(prompt_id)
             is_finished = False
@@ -597,7 +598,7 @@ def queue_comfyui(images, workflow):
         yield {"error": f"Error waiting for image generation: {str(e)}"}
 
     # Close the websocket connection
-    ws.close()
+    # ws.close()
     
 def handler(job):
     """
