@@ -471,37 +471,47 @@ def save_base64_image_to_file(image_base64, file_path):
     with open(file_path, "wb") as file:
         file.write(image_data)
 
-last_data_shared = None
-lock = threading.Lock()
-def websocket_receiver(ws):
-    """
-    在後台線程中持續接收WebSocket資料，並更新共享變量。
-    """
-    global last_data_shared
-    while True:
-        try:
-            out = ws.recv()  # 接收一個消息
-            with lock:
-                out_data = json.loads(out)
-                out_type = out_data.get("type", "")
-                if out_type in ["progress_state"]:
-                    last_data_shared = out_data  # 更新為最新（最後）的一個
-        except websocket.WebSocketTimeoutException:
-            # 超時時不break，而是繼續循環（持續接收）
-            pass
-        except websocket.WebSocketConnectionClosedException:
-            print("WebSocket connection closed in receiver thread.")
-            break
-        except Exception as e:
-            traceback.print_exc()  # 改用print_exc來打印堆棧
-            print(f"WebSocket error: {str(e)}")
-            raise e
-def get_last_websocket_data():
-    global last_data_shared
-    with lock:
-        last_data = last_data_shared  # 安全讀取
-    return last_data
+# last_data_shared = None
+# lock = threading.Lock()
+# def websocket_receiver_loop(ws):
+#     global last_data_shared
+#     while True:
+#         try:
+#             out = ws.recv()  # 接收一個消息
+#             with lock:
+#                 out_data = json.loads(out)
+#                 out_type = out_data.get("type", "")
+#                 if out_type in ["progress_state"]:
+#                     last_data_shared = out_data  # 更新為最新（最後）的一個
+#         except websocket.WebSocketTimeoutException:
+#             # 超時時不break，而是繼續循環（持續接收）
+#             pass
+#         except websocket.WebSocketConnectionClosedException:
+#             print("WebSocket connection closed in receiver thread.")
+#             break
+#         except Exception as e:
+#             traceback.print_exc()  # 改用print_exc來打印堆棧
+#             print(f"WebSocket error: {str(e)}")
+#             raise e
+# def get_last_websocket_data():
+#     global last_data_shared
+#     with lock:
+#         last_data = last_data_shared  # 安全讀取
+#     return last_data
 
+def websocket_receiver(ws):
+    try:
+        out = ws.recv()  # 接收一個消息
+        out_data = json.loads(out)
+        out_type = out_data.get("type", "")
+        if out_type in ["progress_state"]:
+            return out_data
+    except websocket.WebSocketConnectionClosedException:
+        print("WebSocket connection closed in receiver thread.")
+    except Exception as e:
+        traceback.print_exc()  # 改用print_exc來打印堆棧
+        print(f"WebSocket error: {str(e)}")
+    return None
 
 def queue_comfyui(images, workflow):
     # Make sure that the ComfyUI API is available
@@ -534,15 +544,15 @@ def queue_comfyui(images, workflow):
         return
     
     # start websocket receiver thread
-    receiver_thread = threading.Thread(target=websocket_receiver, args=(ws,), daemon=True)
-    receiver_thread.start()
+    # receiver_thread = threading.Thread(target=websocket_receiver, args=(ws,), daemon=True)
+    # receiver_thread.start()
 
     # Poll for completion
     print(f"runpod-worker-comfy - wait until image generation is complete")
     start_time = time.time()
     try:
         while time.time() - start_time < COMFY_POLLING_TIMEOUT_MS / 1000:
-            out_data = get_last_websocket_data()
+            out_data = websocket_receiver(ws)
             if out_data:
                 out_type = out_data.get("type", "")
                 if out_type in ["progress_state"]: # 解析進度資料並回傳
