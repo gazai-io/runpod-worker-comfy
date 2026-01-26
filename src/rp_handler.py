@@ -595,7 +595,8 @@ def queue_comfyui(images, workflow):
         else:
             yield {"error": "Max retries reached while waiting for image generation"}
     except Exception as e:
-        traceback.print_stack()
+        stack_string = traceback.format_exc()
+        print(f"Error waiting for image generation: {str(e)}\n{stack_string}")
         yield {"error": f"Error waiting for image generation: {str(e)}"}
 
     # Close the websocket connection
@@ -646,7 +647,7 @@ def handler(job):
     images_result = process_output_images(progress, job["id"], download_file_names, return_format=return_format)
 
     result = {**images_result, "refresh_worker": REFRESH_WORKER}
-    print(f"output result: {result}")
+    # print(f"output result: {result}")
     return result
 
 
