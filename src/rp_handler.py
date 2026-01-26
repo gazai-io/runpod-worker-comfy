@@ -508,6 +508,9 @@ def websocket_receiver(ws):
             return out_data
     except websocket.WebSocketConnectionClosedException:
         print("WebSocket connection closed in receiver thread.")
+    except websocket.WebSocketTimeoutException:
+        # 超時時不break，而是繼續循環（持續接收）
+        pass
     except Exception as e:
         traceback.print_exc()  # 改用print_exc來打印堆棧
         print(f"WebSocket error: {str(e)}")
