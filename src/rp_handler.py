@@ -595,10 +595,11 @@ def queue_comfyui(images, workflow):
         else:
             yield {"error": "Max retries reached while waiting for image generation"}
     except Exception as e:
+        traceback.print_stack()
         yield {"error": f"Error waiting for image generation: {str(e)}"}
 
     # Close the websocket connection
-    # ws.close()
+    ws.close()
     
 def handler(job):
     """
@@ -637,7 +638,7 @@ def handler(job):
         elif "success" in progress:
             break
         elif "message" in progress:
-            print(f"progress: {progress}")
+            # print(f"progress: {progress}")
             runpod.serverless.progress_update(job, progress)
     progress = progress["success"]
 
