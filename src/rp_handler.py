@@ -109,6 +109,24 @@ def check_server(url, retries=500, delay=50):
     return False
 
 
+def upload_images_confy(name, image_data, retries=20, delay=100) -> Tuple[bool, str]:
+    blob = base64.b64decode(image_data)
+    # Prepare the form data
+    files = {
+        "image": (name, BytesIO(blob), "image/png"),
+        "overwrite": (None, "true"),
+    }
+
+    # POST request to upload the image
+    for i in range(retries):
+        response = requests.post(f"http://{COMFY_HOST}/upload/image", files=files)
+        if response.status_code == 200:
+            return True, f"Successfully uploaded {name}"
+        else:
+            print(f"Error uploading {name}: {response.text} (attempt {i + 1}/{retries})")
+            time.sleep(delay / 1000)
+    return False, f"Error uploading {name} after {retries} attempts"
+
 def upload_images(images):
     """
     Upload a list of base64 encoded images to the ComfyUI server using the /upload/image endpoint.
@@ -131,20 +149,11 @@ def upload_images(images):
     for image in images:
         name = image["name"]
         image_data = image["image"]
-        blob = base64.b64decode(image_data)
-
-        # Prepare the form data
-        files = {
-            "image": (name, BytesIO(blob), "image/png"),
-            "overwrite": (None, "true"),
-        }
-
-        # POST request to upload the image
-        response = requests.post(f"http://{COMFY_HOST}/upload/image", files=files)
-        if response.status_code != 200:
-            upload_errors.append(f"Error uploading {name}: {response.text}")
+        success, message = upload_images_confy(name, image_data)
+        if success:
+            responses.append(message)
         else:
-            responses.append(f"Successfully uploaded {name}")
+            upload_errors.append(message)
 
     if upload_errors:
         print(f"runpod-worker-comfy - image(s) upload with errors")
@@ -470,34 +479,6 @@ def save_base64_image_to_file(image_base64, file_path):
     image_data = base64.b64decode(image_base64)
     with open(file_path, "wb") as file:
         file.write(image_data)
-
-# last_data_shared = None
-# lock = threading.Lock()
-# def websocket_receiver_loop(ws):
-#     global last_data_shared
-#     while True:
-#         try:
-#             out = ws.recv()  # 接收一個消息
-#             with lock:
-#                 out_data = json.loads(out)
-#                 out_type = out_data.get("type", "")
-#                 if out_type in ["progress_state"]:
-#                     last_data_shared = out_data  # 更新為最新（最後）的一個
-#         except websocket.WebSocketTimeoutException:
-#             # 超時時不break，而是繼續循環（持續接收）
-#             pass
-#         except websocket.WebSocketConnectionClosedException:
-#             print("WebSocket connection closed in receiver thread.")
-#             break
-#         except Exception as e:
-#             traceback.print_exc()  # 改用print_exc來打印堆棧
-#             print(f"WebSocket error: {str(e)}")
-#             raise e
-# def get_last_websocket_data():
-#     global last_data_shared
-#     with lock:
-#         last_data = last_data_shared  # 安全讀取
-#     return last_data
 
 def websocket_receiver(ws):
     try:
