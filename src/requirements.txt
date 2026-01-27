@@ -10,3 +10,4 @@ websocket-client
 # 短期解法 強制指定 numba 和 llvmlite 版本以解決相容性問題
 numba>=0.59.0
 llvmlite>=0.42.0
+transformers>=4.57.0

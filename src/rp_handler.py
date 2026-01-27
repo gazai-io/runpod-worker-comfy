@@ -631,6 +631,10 @@ def handler(job):
     images = validated_data.get("images")
     download_file_names = validated_data.get("download_file_names") or []
 
+    # preview workflow
+    print(f"runpod-worker-comfy - workflow:")
+    print(workflow)
+
     # donload images
     new_images = download_images(images)
 
