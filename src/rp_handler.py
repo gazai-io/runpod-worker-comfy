@@ -1,3 +1,6 @@
+import random
+import threading
+import traceback
 import runpod
 from runpod.serverless.utils import rp_upload
 import json
@@ -12,15 +15,16 @@ from PIL import Image
 from typing import Optional, Tuple
 import uuid
 
+import websocket
+
 
 # Time to wait between API check attempts in milliseconds
 COMFY_API_AVAILABLE_INTERVAL_MS = int(os.environ.get("COMFY_API_AVAILABLE_INTERVAL_MS", 50))
 # Maximum number of API check attempts
 COMFY_API_AVAILABLE_MAX_RETRIES = int(os.environ.get("COMFY_API_AVAILABLE_MAX_RETRIES", 500))
 # Time to wait between poll attempts in milliseconds
-COMFY_POLLING_INTERVAL_MS = int(os.environ.get("COMFY_POLLING_INTERVAL_MS", 250))
-# Maximum number of poll attempts
-COMFY_POLLING_MAX_RETRIES = int(os.environ.get("COMFY_POLLING_MAX_RETRIES", 500))
+COMFY_POLLING_TIMEOUT_MS = int(os.environ.get("COMFY_POLLING_TIMEOUT_MS", 1200000))
+COMFY_POLLING_INTERVAL_MS = int(os.environ.get("COMFY_POLLING_INTERVAL_MS", 100))
 # Host where ComfyUI is running
 COMFY_HOST = "127.0.0.1:8188"
 # Enforce a clean state after each job is done
@@ -93,6 +97,7 @@ def check_server(url, retries=500, delay=50):
                 return True
         except requests.RequestException as e:
             # If an exception occurs, the server may not be ready
+            print(f"runpod-worker-comfy - API not reachable yet (attempt {i + 1}/{retries})")
             pass
 
         # Wait for the specified delay before retrying
@@ -103,6 +108,24 @@ def check_server(url, retries=500, delay=50):
     )
     return False
 
+
+def upload_images_confy(name, image_data, retries=20, delay=100) -> Tuple[bool, str]:
+    blob = base64.b64decode(image_data)
+    # Prepare the form data
+    files = {
+        "image": (name, BytesIO(blob), "image/png"),
+        "overwrite": (None, "true"),
+    }
+
+    # POST request to upload the image
+    for i in range(retries):
+        response = requests.post(f"http://{COMFY_HOST}/upload/image", files=files)
+        if response.status_code == 200:
+            return True, f"Successfully uploaded {name}"
+        else:
+            print(f"Error uploading {name}: {response.text} (attempt {i + 1}/{retries})")
+            time.sleep(delay / 1000)
+    return False, f"Error uploading {name} after {retries} attempts"
 
 def upload_images(images):
     """
@@ -126,20 +149,11 @@ def upload_images(images):
     for image in images:
         name = image["name"]
         image_data = image["image"]
-        blob = base64.b64decode(image_data)
-
-        # Prepare the form data
-        files = {
-            "image": (name, BytesIO(blob), "image/png"),
-            "overwrite": (None, "true"),
-        }
-
-        # POST request to upload the image
-        response = requests.post(f"http://{COMFY_HOST}/upload/image", files=files)
-        if response.status_code != 200:
-            upload_errors.append(f"Error uploading {name}: {response.text}")
+        success, message = upload_images_confy(name, image_data)
+        if success:
+            responses.append(message)
         else:
-            responses.append(f"Successfully uploaded {name}")
+            upload_errors.append(message)
 
     if upload_errors:
         print(f"runpod-worker-comfy - image(s) upload with errors")
@@ -156,8 +170,7 @@ def upload_images(images):
         "details": responses,
     }
 
-
-def queue_workflow(workflow):
+def queue_workflow(workflow, client_id=None):
     """
     Queue a workflow to be processed by ComfyUI
 
@@ -169,7 +182,10 @@ def queue_workflow(workflow):
     """
 
     # The top level element "prompt" is required by ComfyUI
-    data = json.dumps({"prompt": workflow}).encode("utf-8")
+    data = {"prompt": workflow}
+    if client_id is not None:
+        data["client_id"] = client_id
+    data = json.dumps(data).encode("utf-8")
 
     retries = 0
     while retries < COMFY_API_AVAILABLE_MAX_RETRIES:
@@ -182,7 +198,6 @@ def queue_workflow(workflow):
             retries += 1
 
     raise Exception("Max retries reached while queuing workflow")
-
 
 def get_history(prompt_id):
     """
@@ -426,6 +441,33 @@ def download_image_from_s3(s3_obj, retrys=3, timeout=10, temp_file_dir="/s3_tmp"
     data = retry_loop(download, retrys=retrys, timeout=timeout)    
     return base64.b64encode(data).decode('utf-8')
 
+def download_images(images):
+    new_images = []
+    if images is not None:
+        for image in images:
+            image_type = image.get("type", "base64")
+            if image_type == "url":
+                image_base64 = downlaod_image_from_url(image["image"])
+                new_images.append({
+                    "name": image["name"],
+                    "image": image_base64,
+                })
+            elif image_type == "base64":
+                new_images.append({
+                    "name": image["name"],
+                    "image": image["image"],
+                })
+            elif image_type == "s3":
+                image_base64 = download_image_from_s3(image["image"])
+                new_images.append({
+                    "name": image["name"],
+                    "image": image_base64,
+                })
+            else:
+                raise ValueError(f"Unsupported image type: {image_type} in image filename {image['name']}")
+
+    return new_images
+
 def save_base64_image_to_file(image_base64, file_path):
     """
     Save a base64 encoded image to a file.
@@ -437,6 +479,131 @@ def save_base64_image_to_file(image_base64, file_path):
     image_data = base64.b64decode(image_base64)
     with open(file_path, "wb") as file:
         file.write(image_data)
+
+def websocket_receiver(ws):
+    try:
+        out = ws.recv()  # 接收一個消息
+        out_data = json.loads(out)
+        out_type = out_data.get("type", "")
+        if out_type in ["progress_state"]:
+            return out_data
+    except websocket.WebSocketConnectionClosedException:
+        print("WebSocket connection closed in receiver thread.")
+    except websocket.WebSocketTimeoutException:
+        # 超時時不break，而是繼續循環（持續接收）
+        pass
+    except Exception as e:
+        traceback.print_exc()  # 改用print_exc來打印堆棧
+        print(f"WebSocket error: {str(e)}")
+    return None
+def websocket_connector(client_id, max_retries=1, interval_ms=100):
+    ws = websocket.WebSocket()
+    retries = 0
+    while retries < max_retries:
+        try:
+            ws.connect("ws://{}/ws?clientId={}".format(COMFY_HOST, client_id))
+            ws.settimeout(0.1)
+            return ws
+        except Exception as e:
+            print(f"Error connecting to WebSocket: {str(e)}. Retrying...")
+            time.sleep(interval_ms / 1000)
+            retries += 1
+    raise Exception("Max retries reached while connecting to WebSocket")
+
+
+def queue_comfyui(images, workflow):
+    # Make sure that the ComfyUI API is available
+    check_server(
+        f"http://{COMFY_HOST}",
+        COMFY_API_AVAILABLE_MAX_RETRIES,
+        COMFY_API_AVAILABLE_INTERVAL_MS,
+    )
+
+    # Upload images if they exist
+    upload_result = upload_images(images)
+
+    if upload_result["status"] == "error":
+        yield {"error": upload_result}
+        return
+    
+    # create websocket client id
+    client_id=str(uuid.uuid4())
+    # Queue the workflow
+    try:
+        queued_workflow = queue_workflow(workflow, client_id=client_id)
+        prompt_id = queued_workflow["prompt_id"]
+        print(f"runpod-worker-comfy - queued workflow with ID {prompt_id}")
+    except Exception as e:
+        yield {"error": f"Error queuing workflow: {str(e)}"}
+        return
+    
+    # start websocket receiver thread
+    # receiver_thread = threading.Thread(target=websocket_receiver, args=(ws,), daemon=True)
+    # receiver_thread.start()
+
+    # Poll for completion
+    print(f"runpod-worker-comfy - wait until image generation is complete")
+    start_time = time.time()
+    ws = None
+    try:
+        while time.time() - start_time < COMFY_POLLING_TIMEOUT_MS / 1000:
+
+            # 避免進度條影響結束判斷 ws 採有連上就接收 沒有就繼續執行結束判斷
+            if ws is None:
+                try:
+                    ws = websocket_connector(client_id)
+                except Exception as e:
+                    ws = None
+                    print(f"Error reconnecting to WebSocket: {str(e)}. Retrying...")
+            if ws is not None:
+                out_data = websocket_receiver(ws)
+                if out_data:
+                    out_type = out_data.get("type", "")
+                    if out_type in ["progress_state"]: # 解析進度資料並回傳
+                        total_nodes = len(workflow)
+                        completed_nodes = [node_id for node_id in out_data["data"]["nodes"] if out_data["data"]["nodes"][node_id].get("state") == "finished"]
+                        running_nodes = [node_id for node_id in out_data["data"]["nodes"] if out_data["data"]["nodes"][node_id].get("state") == "running"]
+                        running_nodes_maxs = [out_data["data"]["nodes"][node_id].get("max", 1) for node_id in running_nodes]
+                        running_nodes_values = [out_data["data"]["nodes"][node_id].get("value", 0) for node_id in running_nodes]
+                        yield {"message": {
+                            "raw": out_data, 
+                            "progress_1_value": len(completed_nodes),
+                            "progress_1_max": total_nodes, 
+                            "progress_2_value": sum(running_nodes_values) if len(running_nodes) > 0 else 0,
+                            "progress_2_max": sum(running_nodes_maxs) if len(running_nodes) > 0 else 1,
+                        }}
+
+            # Exit the loop if we have found the history
+            history = get_history(prompt_id)
+            is_finished = False
+            if prompt_id in history and history[prompt_id].get("status") and history[prompt_id].get("status").get("messages"):
+                for message in history[prompt_id]["status"]["messages"]:
+                    if (
+                        isinstance(message, list) and
+                        len(message) == 2 and
+                        message[0] == "execution_success" and
+                        isinstance(message[1], dict) and
+                        message[1].get("prompt_id") == prompt_id
+                    ):
+                        is_finished = True
+                        break
+            
+            if is_finished:
+                yield {"success": history[prompt_id].get("outputs")}
+                break
+            
+            # Wait before trying again
+            # time.sleep(COMFY_POLLING_INTERVAL_MS / 1000)
+        else:
+            yield {"error": "Max retries reached while waiting for image generation"}
+    except Exception as e:
+        stack_string = traceback.format_exc()
+        print(f"Error waiting for image generation: {str(e)}\n{stack_string}")
+        yield {"error": f"Error waiting for image generation: {str(e)}"}
+
+    # Close the websocket connection
+    if ws is not None:
+        ws.close()
 
 def handler(job):
     """
@@ -464,91 +631,30 @@ def handler(job):
     images = validated_data.get("images")
     download_file_names = validated_data.get("download_file_names") or []
 
+    # preview workflow
+    print(f"runpod-worker-comfy - workflow:")
+    print(workflow)
+
     # donload images
-    new_images = []
-    if images is not None:
-        for image in images:
-            image_type = image.get("type", "base64")
-            if image_type == "url":
-                image_base64 = downlaod_image_from_url(image["image"])
-                new_images.append({
-                    "name": image["name"],
-                    "image": image_base64,
-                })
-            elif image_type == "base64":
-                new_images.append({
-                    "name": image["name"],
-                    "image": image["image"],
-                })
-            elif image_type == "s3":
-                image_base64 = download_image_from_s3(image["image"])
-                new_images.append({
-                    "name": image["name"],
-                    "image": image_base64,
-                })
-            else:
-                raise ValueError(f"Unsupported image type: {image_type} in image filename {image['name']}")
-    # Make sure that the ComfyUI API is available
-    check_server(
-        f"http://{COMFY_HOST}",
-        COMFY_API_AVAILABLE_MAX_RETRIES,
-        COMFY_API_AVAILABLE_INTERVAL_MS,
-    )
+    new_images = download_images(images)
 
-    # Upload images if they exist
-    upload_result = upload_images(new_images)
-
-    if upload_result["status"] == "error":
-        return upload_result
-
-    # Queue the workflow
-    try:
-        queued_workflow = queue_workflow(workflow)
-        prompt_id = queued_workflow["prompt_id"]
-        print(f"runpod-worker-comfy - queued workflow with ID {prompt_id}")
-    except Exception as e:
-        return {"error": f"Error queuing workflow: {str(e)}"}
-
-    # Poll for completion
-    print(f"runpod-worker-comfy - wait until image generation is complete")
-    retries = 0
-    try:
-        while retries < COMFY_POLLING_MAX_RETRIES:
-            history = get_history(prompt_id)
-
-            if prompt_id in history and history[prompt_id].get("status"):
-                print(history[prompt_id].get("status").get("messages"))
-
-            # Exit the loop if we have found the history
-            is_finished = False
-            if prompt_id in history and history[prompt_id].get("status") and history[prompt_id].get("status").get("messages"):
-                for message in history[prompt_id]["status"]["messages"]:
-                    if (
-                        isinstance(message, list) and
-                        len(message) == 2 and
-                        message[0] == "execution_success" and
-                        isinstance(message[1], dict) and
-                        message[1].get("prompt_id") == prompt_id
-                    ):
-                        is_finished = True
-                        break
-            
-            if is_finished:
-                break
-            
-            # Wait before trying again
-            time.sleep(COMFY_POLLING_INTERVAL_MS / 1000)
-            retries += 1
-        else:
-            return {"error": "Max retries reached while waiting for image generation"}
-    except Exception as e:
-        return {"error": f"Error waiting for image generation: {str(e)}"}
+    # Queue the workflow and poll for completion
+    progress_generator = queue_comfyui(new_images, workflow)
+    for progress in progress_generator:
+        if "error" in progress:
+            return {"error": progress["error"]}
+        elif "success" in progress:
+            break
+        elif "message" in progress:
+            # print(f"progress: {progress}")
+            runpod.serverless.progress_update(job, progress)
+    progress = progress["success"]
 
     # Get the generated image and return it as URL in an AWS bucket or as base64
-    images_result = process_output_images(history[prompt_id].get("outputs"), job["id"], download_file_names, return_format=return_format)
+    images_result = process_output_images(progress, job["id"], download_file_names, return_format=return_format)
 
     result = {**images_result, "refresh_worker": REFRESH_WORKER}
-
+    # print(f"output result: {result}")
     return result
 
 
@@ -565,6 +671,17 @@ if __name__ == "__main__":
     # image_url = "https://www.gazai.ai/images/gazai-chan-chibi-no-bg.png"
     # image_base64 = downlaod_image_from_url(image_url)
     # save_base64_image_to_file(image_base64, "test.png")
-
-
+    
+    # test queue_comfyui
+    # COMFY_HOST = "220.135.18.159:1120"
+    # workflow_path = r"./test_resources/workflows/workflow_sdxl.json"
+    # with open(workflow_path, "r") as f:
+    #     workflow = json.load(f)["input"]["workflow"]
+    # workflow["23"]["inputs"]["noise_seed"] = random.randint(0, 100)
+    # images = []
+    # for progress in queue_comfyui(images, workflow):
+    #     message = progress.get("message", {})
+    #     # print(progress)
+    #     print(message.get("progress_1_value"), message.get("progress_1_max"), 
+    #           message.get("progress_2_value"), message.get("progress_2_max"))
 

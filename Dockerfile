@@ -1,4 +1,4 @@
-FROM ubuntu:22.04 AS base
+FROM public.ecr.aws/docker/library/ubuntu:22.04 AS base
 
 ENV DEBIAN_FRONTEND=noninteractive
 # Prefer binary wheels over source distributions for faster pip installations
@@ -142,6 +142,11 @@ RUN cd /comfyui/custom_nodes/ComfyUI-Impact-Pack && \
 # ComfyUI-Impact-Subpac extra install
 RUN cd /comfyui/custom_nodes/ComfyUI-Impact-Subpack && \
     python install.py
+
+# rename comfyui_controlnet_aux/config.example.yaml to comfyui_controlnet_aux/config.yaml
+# RUN mv /comfyui/custom_nodes/comfyui_controlnet_aux/config.example.yaml /comfyui/custom_nodes/comfyui_controlnet_aux/config.yaml
+# yaml annotator_ckpts_path to /workspace/storage/stable_diffusion/models/controlnet
+# RUN sed -i 's|annotator_ckpts_path: .*|annotator_ckpts_path: /workspace/storage/stable_diffusion/models/controlnet|' /comfyui/custom_nodes/comfyui_controlnet_aux/config.yaml
 
 # Start container
 CMD ["/start.sh"]
