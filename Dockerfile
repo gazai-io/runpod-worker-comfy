@@ -121,6 +121,7 @@ RUN git clone https://github.com/kijai/ComfyUI-WanVideoWrapper.git /comfyui/cust
 RUN git clone https://github.com/aria1th/ComfyUI-LogicUtils.git /comfyui/custom_nodes/ComfyUI-LogicUtils
 RUN git clone https://github.com/1038lab/ComfyUI-QwenVL.git /comfyui/custom_nodes/ComfyUI-QwenVL
 RUN git clone https://github.com/adieyal/comfyui-dynamicprompts.git /comfyui/custom_nodes/comfyui-dynamicprompts
+RUN git clone https://github.com/endman100/ComfyUI_logic_lite.git /comfyui/custom_nodes/ComfyUI_logic_lite
 
 # merge all requirements.txt to merged_requirements.txt
 RUN python3 /create_merge_requirement.py
