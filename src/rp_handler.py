@@ -330,16 +330,13 @@ def process_output_images(outputs, job_id, download_file_names, return_format="u
 
     output_files = []
     for node_id, node_output in outputs.items():
-        if "images" in node_output:
-            for image in node_output["images"]:
-                output_files.append(
-                    os.path.join(image["subfolder"], image["filename"])
-                )
-        elif "gifs" in node_output:
-            for image in node_output["gifs"]:
-                output_files.append(
-                    os.path.join(image["subfolder"], image["filename"])
-                )
+        for key in node_output:
+            if isinstance(node_output[key], list):
+                for item in node_output[key]:
+                    if isinstance(item, dict) and "filename" in item:
+                        output_files.append(
+                            os.path.join(item.get("subfolder", ""), item["filename"])
+                        )
 
     print(f"runpod-worker-comfy - image generation is done")
 

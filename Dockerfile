@@ -122,12 +122,16 @@ RUN git clone https://github.com/aria1th/ComfyUI-LogicUtils.git /comfyui/custom_
 RUN git clone https://github.com/1038lab/ComfyUI-QwenVL.git /comfyui/custom_nodes/ComfyUI-QwenVL
 RUN git clone https://github.com/adieyal/comfyui-dynamicprompts.git /comfyui/custom_nodes/comfyui-dynamicprompts
 RUN git clone https://github.com/endman100/ComfyUI_logic_lite.git /comfyui/custom_nodes/ComfyUI_logic_lite
+RUN git clone https://github.com/jtydhr88/ComfyUI-See-through.git /comfyui/custom_nodes/ComfyUI-See-through
 
 # merge all requirements.txt to merged_requirements.txt
 RUN python3 /create_merge_requirement.py
 
 # Install merged requirements.txt
 RUN uv pip install -U -r "merged_requirements.txt" --index-strategy unsafe-best-match --extra-index-url https://download.pytorch.org/whl/cu128
+
+# Remove xformers to avoid ABI mismatch with torch (diffusers will use fallback attention)
+# RUN uv pip uninstall xformers 2>/dev/null || true
 
 # Restore the snapshot to install custom nodes
 # RUN /restore_snapshot.sh

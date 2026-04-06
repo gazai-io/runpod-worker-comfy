@@ -1,0 +1,116 @@
+{
+  "input": {
+    "workflow": {
+      "1": {
+        "inputs": {
+          "image": "test_seethrough.png"
+        },
+        "class_type": "LoadImage",
+        "_meta": {
+          "title": "Load Image"
+        }
+      },
+      "2": {
+        "inputs": {
+          "model": "layerdifforg/seethroughv0.0.2_layerdiff3d",
+          "vae_ckpt": "",
+          "unet_ckpt": ""
+        },
+        "class_type": "SeeThrough_LoadLayerDiffModel",
+        "_meta": {
+          "title": "SeeThrough Load LayerDiff Model"
+        }
+      },
+      "3": {
+        "inputs": {
+          "model": "24yearsold/seethroughv0.0.1_marigold"
+        },
+        "class_type": "SeeThrough_LoadDepthModel",
+        "_meta": {
+          "title": "SeeThrough Load Depth Model"
+        }
+      },
+      "5": {
+        "inputs": {
+          "seed": 42,
+          "layers": [
+            "9",
+            0
+          ],
+          "depth_model": [
+            "3",
+            0
+          ]
+        },
+        "class_type": "SeeThrough_GenerateDepth",
+        "_meta": {
+          "title": "SeeThrough Generate Depth"
+        }
+      },
+      "6": {
+        "inputs": {
+          "tblr_split": true,
+          "use_lama": true,
+          "layers_depth": [
+            "5",
+            0
+          ]
+        },
+        "class_type": "SeeThrough_PostProcess",
+        "_meta": {
+          "title": "SeeThrough Post Process"
+        }
+      },
+      "7": {
+        "inputs": {
+          "filename_prefix": "seethrough",
+          "parts": [
+            "6",
+            0
+          ]
+        },
+        "class_type": "SeeThrough_SavePSD",
+        "_meta": {
+          "title": "SeeThrough Save PSD"
+        }
+      },
+      "8": {
+        "inputs": {
+          "images": [
+            "6",
+            1
+          ]
+        },
+        "class_type": "PreviewImage",
+        "_meta": {
+          "title": "Preview Image"
+        }
+      },
+      "9": {
+        "inputs": {
+          "seed": 42,
+          "resolution": 1280,
+          "num_inference_steps": 30,
+          "image": [
+            "1",
+            0
+          ],
+          "layerdiff_model": [
+            "2",
+            0
+          ]
+        },
+        "class_type": "SeeThrough_GenerateLayers",
+        "_meta": {
+          "title": "SeeThrough Generate Layers"
+        }
+      }
+    },
+    "images": [
+      {
+        "name": "test_seethrough.png",
+        "image": "BASE64_ENCODED_IMAGE_HERE"
+      }
+    ]
+  }
+}
