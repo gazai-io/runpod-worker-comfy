@@ -131,7 +131,7 @@ RUN python3 /create_merge_requirement.py
 RUN uv pip install -U -r "merged_requirements.txt" --index-strategy unsafe-best-match --extra-index-url https://download.pytorch.org/whl/cu128
 
 # Remove xformers to avoid ABI mismatch with torch (diffusers will use fallback attention)
-# RUN uv pip uninstall xformers 2>/dev/null || true
+RUN uv pip uninstall xformers 2>/dev/null || true
 
 # Restore the snapshot to install custom nodes
 # RUN /restore_snapshot.sh
