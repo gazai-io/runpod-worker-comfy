@@ -660,7 +660,7 @@ def handler(job):
 
 # Start the handler only if this script is run directly
 if __name__ == "__main__":
-    # runpod.serverless.start({"handler": handler})
+    runpod.serverless.start({"handler": handler})
 
     # test download_image_from_s3
     # s3_obj = {"bucket_name": "gazai", "object_key": "videos/clwyxv3h30000fh6yiygggtle/00121c91-484f-4eb7-bdf3-7ed15c7185ad/output.mp4"}
@@ -673,10 +673,10 @@ if __name__ == "__main__":
     # save_base64_image_to_file(image_base64, "test.png")
 
     # test upload_file_to_s3
-    job_id = "test_job_id"
-    image_location = "C:\\Users\\user\\Downloads\\新增資料夾 (102)\\seethrough_20260401_225741_da28c553.psd"
-    url, obj_key = runpod_upload_image(job_id, image_location, bucket_name="runpod-temp")
-    print(f"Uploaded image URL: {url}, S3 Object Key: {obj_key}")
+    # job_id = "test_job_id"
+    # image_location = "C:\\Users\\user\\Downloads\\新增資料夾 (102)\\seethrough_20260401_225741_da28c553.psd"
+    # url, obj_key = runpod_upload_image(job_id, image_location, bucket_name="runpod-temp")
+    # print(f"Uploaded image URL: {url}, S3 Object Key: {obj_key}")
     
     # test queue_comfyui
     # COMFY_HOST = "220.135.18.159:1120"
