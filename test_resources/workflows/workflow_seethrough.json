@@ -96,7 +96,7 @@
     },
     "images": [
       {
-        "name": "test_seethrough.png",
+        "name": "test.png",
         "image": "BASE64_ENCODED_IMAGE_HERE"
       }
     ]
