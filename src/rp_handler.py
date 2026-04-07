@@ -329,6 +329,7 @@ def process_output_images(outputs, job_id, download_file_names, return_format="u
     COMFY_TEMP_PATH = os.environ.get("COMFY_TEMP_PATH", "/comfyui/temp")
 
     output_files = []
+    print(f"outputs: {outputs}")
     for node_id, node_output in outputs.items():
         for key in node_output:
             if isinstance(node_output[key], list):
@@ -338,7 +339,7 @@ def process_output_images(outputs, job_id, download_file_names, return_format="u
                             os.path.join(item.get("subfolder", ""), item["filename"])
                         )
 
-    print(f"runpod-worker-comfy - image generation is done")
+    print(f"runpod-worker-comfy - image generation is done output_files: {output_files}")
 
     message = []
     for output_image in output_files:
@@ -671,14 +672,17 @@ if __name__ == "__main__":
     
     # test queue_comfyui
     # COMFY_HOST = "220.135.18.159:1120"
-    # workflow_path = r"./test_resources/workflows/workflow_sdxl.json"
+    # workflow_path = r"./test_resources/workflows/workflow_seethrough.json"
     # with open(workflow_path, "r") as f:
     #     workflow = json.load(f)["input"]["workflow"]
-    # workflow["23"]["inputs"]["noise_seed"] = random.randint(0, 100)
+    # # workflow["23"]["inputs"]["noise_seed"] = random.randint(0, 100)
     # images = []
     # for progress in queue_comfyui(images, workflow):
     #     message = progress.get("message", {})
     #     # print(progress)
     #     print(message.get("progress_1_value"), message.get("progress_1_max"), 
     #           message.get("progress_2_value"), message.get("progress_2_max"))
+    # images_result = process_output_images(progress["success"], "test23408920", [], return_format="url")
+    # print(images_result)
+
 

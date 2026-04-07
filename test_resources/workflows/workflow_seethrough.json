@@ -3,7 +3,7 @@
     "workflow": {
       "1": {
         "inputs": {
-          "image": "test_seethrough.png"
+          "image": "test.png"
         },
         "class_type": "LoadImage",
         "_meta": {
@@ -32,7 +32,7 @@
       },
       "5": {
         "inputs": {
-          "seed": 42,
+          "seed": 12,
           "layers": [
             "9",
             0
@@ -69,21 +69,9 @@
             0
           ]
         },
-        "class_type": "SeeThrough_SavePSD",
+        "class_type": "SeeThrough_ExportPSD",
         "_meta": {
-          "title": "SeeThrough Save PSD"
-        }
-      },
-      "8": {
-        "inputs": {
-          "images": [
-            "6",
-            1
-          ]
-        },
-        "class_type": "PreviewImage",
-        "_meta": {
-          "title": "Preview Image"
+          "title": "SeeThrough Export PSD"
         }
       },
       "9": {
