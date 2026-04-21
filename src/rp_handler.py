@@ -5,6 +5,7 @@ import runpod
 from runpod.serverless.utils import rp_upload
 import json
 import urllib.request
+import urllib.error
 import boto3
 import time
 import os
@@ -89,7 +90,7 @@ def check_server(url, retries=500, delay=50):
 
     for i in range(retries):
         try:
-            response = requests.get(url)
+            response = requests.get(url, timeout=delay / 1000)
 
             # If the response status code is 200, the server is up and running
             if response.status_code == 200:
@@ -192,10 +193,11 @@ def queue_workflow(workflow, client_id=None):
         try:
             req = urllib.request.Request(f"http://{COMFY_HOST}/prompt", data=data)
             return json.loads(urllib.request.urlopen(req).read())
-        except requests.RequestException as e:
+        except (urllib.error.URLError, OSError) as e:
             print(f"Error queuing workflow: {str(e)}. Retrying...")
             time.sleep(COMFY_API_AVAILABLE_INTERVAL_MS / 1000)
             retries += 1
+            
 
     raise Exception("Max retries reached while queuing workflow")
 
@@ -276,7 +278,7 @@ def runpod_upload_image(
         if results_list is not None:
             results_list[result_index] = sim_upload_location
 
-        return sim_upload_location
+        return sim_upload_location, f"simulated_uploaded/{image_name}{file_extension}"
 
     bucket = bucket_name if bucket_name else time.strftime("%m-%y")
     boto_client.put_object(
@@ -360,7 +362,8 @@ def process_output_images(outputs, job_id, download_file_names, return_format="u
             print("runpod-worker-comfy - the image does not exist in the output folder")
             return {
                 "status": "error",
-                "message": f"the image does not exist in the specified output folder: {local_image_path}",
+                "success": False,
+                "error": f"the image does not exist in the specified output folder: {local_image_path}",
             }
         if return_format == "url" and os.environ.get("BUCKET_ENDPOINT_URL", False):
             # URL to image in AWS S3
@@ -386,6 +389,7 @@ def process_output_images(outputs, job_id, download_file_names, return_format="u
 
     return {
         "status": "success",
+        "success": True,
         "message": message,
         "download_files": download_files,
     }
@@ -400,7 +404,7 @@ def retry_loop(func, retrys=3, timeout=10, wait_time=2, *args, **kwargs):
             print(f"Attempt {attempt + 1} failed: {e}")
             fail_messages.append(str(e))
             if attempt == retrys - 1:
-                raise Exception(f"Failed after {retrys} retries, every retry timeout {timeout} seconds. Last error message: {str(e)}")
+                raise Exception(f"Failed after {retrys} retries (per-call timeout={timeout}s). Last error: {str(e)}")
             time.sleep(wait_time)  # Wait before retrying
 
 def downlaod_image_from_url(image_url, retrys=3, timeout=10):
@@ -547,7 +551,6 @@ def queue_comfyui(images, workflow):
     ws = None
     try:
         while time.time() - start_time < COMFY_POLLING_TIMEOUT_MS / 1000:
-
             # 避免進度條影響結束判斷 ws 採有連上就接收 沒有就繼續執行結束判斷
             if ws is None:
                 try:
@@ -578,28 +581,43 @@ def queue_comfyui(images, workflow):
             is_finished = False
             if prompt_id in history and history[prompt_id].get("status") and history[prompt_id].get("status").get("messages"):
                 for message in history[prompt_id]["status"]["messages"]:
-                    if (
-                        isinstance(message, list) and
-                        len(message) == 2 and
-                        message[0] == "execution_success" and
-                        isinstance(message[1], dict) and
-                        message[1].get("prompt_id") == prompt_id
-                    ):
+                    if not (isinstance(message, list) and len(message) == 2 and isinstance(message[1], dict)):
+                        continue
+                    msg_type, msg_data = message[0], message[1]
+                    if msg_type == "execution_success" and msg_data.get("prompt_id") == prompt_id:
                         is_finished = True
+                        print(f"runpod-worker-comfy - image generation is complete for workflow with ID {prompt_id}")
+                        yield {"success": True, "outputs": history[prompt_id].get("outputs")}
+                        break
+                    if msg_type == "execution_error" and msg_data.get("prompt_id") == prompt_id:
+                        is_finished = True
+                        node_id = msg_data.get("node_id", "unknown")
+                        node_type = msg_data.get("node_type", "unknown")
+                        exception_message = msg_data.get("exception_message", "Unknown error")
+                        exception_type = msg_data.get("exception_type", "Exception")
+                        print(f"runpod-worker-comfy - error in node {node_id} of type {node_type}: {exception_type} - {exception_message}")
+                        yield {
+                            "success": False, 
+                            "error": exception_message,
+                            "error_type": exception_type,
+                            "error_node_id": node_id,
+                        }
                         break
             
             if is_finished:
-                yield {"success": history[prompt_id].get("outputs")}
                 break
             
             # Wait before trying again
             # time.sleep(COMFY_POLLING_INTERVAL_MS / 1000)
         else:
-            yield {"error": "Max retries reached while waiting for image generation"}
+            yield {
+                "success": False,
+                "error": "Max retries reached while waiting for image generation"
+            }
     except Exception as e:
         stack_string = traceback.format_exc()
         print(f"Error waiting for image generation: {str(e)}\n{stack_string}")
-        yield {"error": f"Error waiting for image generation: {str(e)}"}
+        yield {"success": False, "error": f"Error waiting for image generation: {str(e)}"}
 
     # Close the websocket connection
     if ws is not None:
@@ -640,18 +658,18 @@ def handler(job):
 
     # Queue the workflow and poll for completion
     progress_generator = queue_comfyui(new_images, workflow)
+    progress = {}
     for progress in progress_generator:
-        if "error" in progress:
-            return {"error": progress["error"]}
-        elif "success" in progress:
+        if "success" in progress and not progress["success"]:
+            return {"error": progress["error"], "status": "error"}
+        elif "success" in progress and progress["success"]:
             break
         elif "message" in progress:
             # print(f"progress: {progress}")
             runpod.serverless.progress_update(job, progress)
-    progress = progress["success"]
 
     # Get the generated image and return it as URL in an AWS bucket or as base64
-    images_result = process_output_images(progress, job["id"], download_file_names, return_format=return_format)
+    images_result = process_output_images(progress.get("outputs", {}), job["id"], download_file_names, return_format=return_format)
 
     result = {**images_result, "refresh_worker": REFRESH_WORKER}
     # print(f"output result: {result}")
@@ -680,17 +698,18 @@ if __name__ == "__main__":
     
     # test queue_comfyui
     # COMFY_HOST = "220.135.18.159:1120"
-    # workflow_path = r"./test_resources/workflows/workflow_seethrough.json"
+    # workflow_path = r"./test_resources/workflows/test copy.json"
     # with open(workflow_path, "r") as f:
     #     workflow = json.load(f)["input"]["workflow"]
     # # workflow["23"]["inputs"]["noise_seed"] = random.randint(0, 100)
     # images = []
     # for progress in queue_comfyui(images, workflow):
     #     message = progress.get("message", {})
-    #     # print(progress)
     #     print(message.get("progress_1_value"), message.get("progress_1_max"), 
     #           message.get("progress_2_value"), message.get("progress_2_max"))
-    # images_result = process_output_images(progress["success"], "test23408920", [], return_format="url")
-    # print(images_result)
+    # print("final progress:", progress)
+    # if progress.get("success", False):
+    #     images_result = process_output_images(progress.get("outputs", []), "test23408920", [], return_format="url")
+    #     print(images_result)
 
 
