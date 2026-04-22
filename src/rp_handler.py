@@ -541,7 +541,7 @@ def queue_comfyui(images, workflow):
     upload_result = upload_images(images)
 
     if upload_result["status"] == "error":
-        yield {"error": upload_result}
+        yield {"success": False, "error": upload_result}
         return
     
     # create websocket client id
@@ -552,7 +552,7 @@ def queue_comfyui(images, workflow):
         prompt_id = queued_workflow["prompt_id"]
         print(f"runpod-worker-comfy - queued workflow with ID {prompt_id}")
     except Exception as e:
-        yield {"error": f"Error queuing workflow: {str(e)}"}
+        yield {"success": False, "error": f"Error queuing workflow: {str(e)}"}
         return
     
     # start websocket receiver thread
