@@ -112,15 +112,27 @@ def check_server(url, retries=500, delay=50):
 
 def upload_images_confy(name, image_data, retries=20, delay=100) -> Tuple[bool, str]:
     blob = base64.b64decode(image_data)
-    # Prepare the form data
-    files = {
-        "image": (name, BytesIO(blob), "image/png"),
-        "overwrite": (None, "true"),
-    }
 
     # POST request to upload the image
     for i in range(retries):
-        response = requests.post(f"http://{COMFY_HOST}/upload/image", files=files)
+        # 每次重試都重新建立 BytesIO，避免 stream position 在上一次讀取後停在末尾導致上傳空資料
+        files = {
+            "image": (name, BytesIO(blob), "image/png"),
+            "overwrite": (None, "true"),
+        }
+        try:
+            response = requests.post(f"http://{COMFY_HOST}/upload/image", files=files)
+        except requests.exceptions.ConnectionError as e:
+            # ComfyUI 尚未啟動或連線被拒（Connection refused），屬於暫時性問題，繼續重試
+            print(f"Error uploading {name}: connection refused (attempt {i + 1}/{retries})")
+            time.sleep(delay / 1000)
+            continue
+        except requests.exceptions.RequestException as e:
+            # 其他網路層問題（timeout 等），同樣重試
+            print(f"Error uploading {name}: {str(e)} (attempt {i + 1}/{retries})")
+            time.sleep(delay / 1000)
+            continue
+
         if response.status_code == 200:
             return True, f"Successfully uploaded {name}"
         else:
