@@ -193,11 +193,25 @@ def queue_workflow(workflow, client_id=None):
         try:
             req = urllib.request.Request(f"http://{COMFY_HOST}/prompt", data=data)
             return json.loads(urllib.request.urlopen(req).read())
+        except urllib.error.HTTPError as e:
+            # HTTPError 代表 ComfyUI 有回應，但回傳了錯誤狀態碼。
+            # 4xx（如 400）= 客戶端問題（workflow 參數錯誤、LoRA 不存在等），
+            #   重試不會改變結果，直接拋出。
+            # 5xx（如 500）= ComfyUI 伺服器端問題（崩潰、記憶體不足等），
+            #   目前也不重試，直接拋出讓上層處理。
+            # 注意：若 ComfyUI 根本沒在跑，不會進到這裡，
+            #   而是丟 URLError（TCP 連線被拒），由下方的 except 重試。
+            try:
+                body = json.loads(e.read().decode("utf-8"))
+            except Exception:
+                body = {}
+            raise Exception(f"Error queuing workflow: HTTP {e.code} {e.reason} - {body}") from e
         except (urllib.error.URLError, OSError) as e:
+            # URLError / OSError 代表網路層問題（ComfyUI 尚未啟動、連線中斷等），
+            # 這類問題可能是暫時性的，值得重試。
             print(f"Error queuing workflow: {str(e)}. Retrying...")
             time.sleep(COMFY_API_AVAILABLE_INTERVAL_MS / 1000)
             retries += 1
-            
 
     raise Exception("Max retries reached while queuing workflow")
 
