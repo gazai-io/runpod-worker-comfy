@@ -41,6 +41,7 @@ runpod_worker_comfy:
   LLM: |
     storage/stable_diffusion/models/llm/
     storage/stable_diffusion/models/LLM/
+  rmbg: storage/stable_diffusion/models/RMBG/
   
 
 runpod_comfy:
@@ -81,3 +82,4 @@ runpod_comfy:
     storage/stable_diffusion/models/llm/
     storage/stable_diffusion/models/LLM/
   diffusion_models: storage/stable_diffusion/models/diffusion_models/
+  rmbg: storage/stable_diffusion/models/RMBG/
