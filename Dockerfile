@@ -49,7 +49,8 @@ ENV LD_LIBRARY_PATH="/usr/local/cuda/lib64"
 
 # Install Python, git and other necessary tools
 RUN pip install --upgrade uv \
-    && uv venv /opt/venv
+    && uv venv /opt/venv \
+    && uv pip install --python /opt/venv/bin/python pip==25.3
 
 # pre install comfyui
 RUN git clone https://github.com/comfyanonymous/ComfyUI.git /comfyui

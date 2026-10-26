@@ -1,0 +1,18 @@
+# Keep the deployed ComfyUI, CUDA, and custom nodes unchanged for this recovery.
+FROM public.ecr.aws/q4s0f1p3/gazai/runpod-worker-comfy@sha256:9bb3d15cbbea215f5aa2ee295b90a58198e215b1f4a6018f2af2d1451909bb71 AS final
+
+# 1.10.1 fixes per-worker job tracking on shared network volumes.
+RUN uv pip install --python /opt/venv/bin/python --index-url https://pypi.org/simple \
+    pip==25.3 runpod==1.10.1
+
+# Fail the build if the handler cannot import or the original GPU stack changed.
+RUN /opt/venv/bin/python -c "import importlib.metadata as m, importlib.util as u, sys, torch; \
+    assert sys.prefix == '/opt/venv', sys.prefix; \
+    assert m.version('runpod') == '1.10.1'; \
+    assert m.version('pip') == '25.3'; \
+    assert torch.__version__.split('+')[0] == '2.8.0', torch.__version__; \
+    assert torch.version.cuda == '12.8', torch.version.cuda; \
+    spec = u.spec_from_file_location('rp_handler', '/rp_handler.py'); \
+    handler = u.module_from_spec(spec); spec.loader.exec_module(handler); \
+    assert callable(handler.handler); \
+    print('Recovery runtime verified:', {'runpod': m.version('runpod'), 'pip': m.version('pip'), 'torch': torch.__version__, 'cuda': torch.version.cuda})"

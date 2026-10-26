@@ -1,0 +1,17 @@
+version: 0.2
+
+phases:
+  pre_build:
+    commands:
+      - aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin public.ecr.aws
+      - test -n "$IMAGE_TAG"
+      - REPOSITORY_URI=public.ecr.aws/q4s0f1p3/$IMAGE_REPO_NAME
+      - IMAGE_URI=$REPOSITORY_URI:$IMAGE_TAG-$MODEL_TYPE
+  build:
+    commands:
+      - docker build --platform linux/amd64 --file Dockerfile.recovery --target final --tag "$IMAGE_URI" .
+  post_build:
+    commands:
+      - test "$CODEBUILD_BUILD_SUCCEEDING" = "1"
+      - docker push "$IMAGE_URI"
+      - printf '{"ImageURI":"%s"}' "$IMAGE_URI" > imageDefinitions.json

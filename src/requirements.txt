@@ -2,7 +2,7 @@ torch==2.8.0
 torchvision==0.23.0
 torchaudio==2.8.0
 xformers
-runpod 
+runpod==1.10.1
 requests 
 boto3
 websocket-client
