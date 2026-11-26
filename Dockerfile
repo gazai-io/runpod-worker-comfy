@@ -153,6 +153,8 @@ RUN git clone --no-checkout https://github.com/endman100/ComfyUI_logic_lite.git 
     git -C /comfyui/custom_nodes/ComfyUI_logic_lite checkout --detach 46b037547fb411e29e094eaf5a378e9dd40bb08f
 RUN git clone --no-checkout https://github.com/endman100/ComfyUI-See-through.git /comfyui/custom_nodes/ComfyUI-See-through && \
     git -C /comfyui/custom_nodes/ComfyUI-See-through checkout --detach 2aedaa31d58782f06c831ca39a52e70f309ab3b9
+RUN git clone --no-checkout https://github.com/ArcAnima/ComfyUI-Anima-Ref-Adapter.git /comfyui/custom_nodes/ComfyUI-Anima-Ref-Adapter && \
+    git -C /comfyui/custom_nodes/ComfyUI-Anima-Ref-Adapter checkout --detach 99c222e1c2da472f4b514583b2dbd1b5afb4bdd9
 
 # merge all requirements.txt to merged_requirements.txt
 RUN python3 /create_merge_requirement.py
