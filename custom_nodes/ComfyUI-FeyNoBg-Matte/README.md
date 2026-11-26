@@ -15,8 +15,8 @@ The outputs are float32 `IMAGE` [B, H, W, 4] with original RGB plus soft alpha a
 
 Place `FeyNobg.safetensors`, `config.json` and `preprocessor_config.json` together in the first applicable location.
 
-1. `<ComfyUI models_dir>/RMBG/FeyNoBg`
-2. `/runpod-volume/models/RMBG/FeyNoBg`
+1. `/runpod-volume/models/RMBG/FeyNoBg`
+2. `<ComfyUI models_dir>/RMBG/FeyNoBg`
 3. `FeyNoBg` under a registered `RMBG` or `rmbg` model path
 
-When no local directory contains all three files, the first inference downloads the pinned revision to the Hugging Face Hub cache. Set `HF_HUB_CACHE` to a writable persistent directory to reuse the download across containers. The Docker build installs the Python dependencies and node code. [Model files at the pinned revision](https://huggingface.co/1038lab/FeyNobg/tree/59dd27c65909b7dcc2de8c3239712b0b997c3e41)
+The worker loads a complete local directory directly, including with `HF_HUB_OFFLINE=1`. If all searched directories are incomplete, the error lists their paths. Set `FEYNOBG_ALLOW_HF_DOWNLOAD=1` to opt in to retrieving the pinned revision through the Hugging Face Hub cache when local files are missing. [Model files at the pinned revision](https://huggingface.co/1038lab/FeyNobg/tree/59dd27c65909b7dcc2de8c3239712b0b997c3e41)

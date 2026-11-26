@@ -1,5 +1,7 @@
 from contextlib import contextmanager
 import importlib.util
+import json
+import os
 from pathlib import Path
 import sys
 from tempfile import TemporaryDirectory
@@ -45,6 +47,8 @@ class FeyNoBgMatteTests(unittest.TestCase):
         self.populate_model_dir(self.model_dir)
         self.folder_paths.models_dir = work
         self.folder_paths.get_folder_paths = Mock(side_effect=KeyError)
+        self.volume_dir = self.models_dir / "volume" / "FeyNoBg"
+        self.enterContext(patch.object(self.nodes, "VOLUME_MODEL_DIR", self.volume_dir))
         self.device = Mock(return_value=torch.device("cpu"))
         comfy = SimpleNamespace(model_management=SimpleNamespace(get_torch_device=self.device))
         self.enterContext(mock_modules({"comfy": comfy}))
@@ -97,7 +101,7 @@ class FeyNoBgMatteTests(unittest.TestCase):
         config = Mock()
         constructor = Mock(return_value=model)
         processor_constructor = Mock(return_value=processor)
-        weights = Mock()
+        weights = Mock(return_value={"decoder.weight": torch.ones(1)})
         self.enterContext(mock_modules({
             "nobg": SimpleNamespace(BiRefNetImageProcessor=processor_constructor),
             "nobg.birefnet.modeling_birefnet": SimpleNamespace(BiRefNet=constructor, BiRefNetConfig=config),
@@ -246,7 +250,7 @@ class FeyNoBgMatteTests(unittest.TestCase):
         clear_cuda.assert_called_once_with()
 
     def test_model_resolution_priority_and_complete_directory(self):
-        volume = self.models_dir / "volume" / "FeyNoBg"
+        volume = self.volume_dir
         registered = self.models_dir / "shared" / "FeyNoBg"
         lowercase = self.models_dir / "lower" / "FeyNoBg"
         for directory in (volume, registered, lowercase):
@@ -256,31 +260,68 @@ class FeyNoBgMatteTests(unittest.TestCase):
             "rmbg": [str(lowercase.parent)],
         }[name]
 
-        def path(value):
-            if value == "/runpod-volume/models/RMBG/FeyNoBg":
-                return volume
-            return Path(value)
-
-        with patch.object(self.nodes, "Path", side_effect=path):
-            self.assertEqual(self.nodes._resolve_model_dir(), self.model_dir)
-            (self.model_dir / self.nodes.WEIGHTS).unlink()
+        self.enterContext(patch.dict(os.environ, {"FEYNOBG_ALLOW_HF_DOWNLOAD": "1", "HF_HUB_OFFLINE": "1"}))
+        download = Mock()
+        with mock_modules({"huggingface_hub": SimpleNamespace(hf_hub_download=download)}):
             self.assertEqual(self.nodes._resolve_model_dir(), volume)
             (volume / self.nodes.MODEL_CONFIG).unlink()
+            self.assertEqual(self.nodes._resolve_model_dir(), self.model_dir)
+            (self.model_dir / self.nodes.WEIGHTS).unlink()
             self.assertEqual(self.nodes._resolve_model_dir(), registered)
             (registered / self.nodes.PROCESSOR_CONFIG).unlink()
             self.assertEqual(self.nodes._resolve_model_dir(), lowercase)
+        download.assert_not_called()
 
     def test_model_download_fallback_uses_pinned_snapshot(self):
         (self.model_dir / self.nodes.WEIGHTS).unlink()
         snapshot = self.models_dir / "hub" / "snapshots" / self.nodes.MODEL_REVISION
         self.populate_model_dir(snapshot)
         download = Mock(side_effect=lambda *, filename, **kwargs: str(snapshot / filename))
+        self.enterContext(patch.dict(os.environ, {"FEYNOBG_ALLOW_HF_DOWNLOAD": "1"}))
         with mock_modules({"huggingface_hub": SimpleNamespace(hf_hub_download=download)}):
             self.assertEqual(self.nodes._resolve_model_dir(), snapshot)
         self.assertEqual(download.call_args_list, [
             call(repo_id="1038lab/FeyNobg", filename=filename, revision="59dd27c65909b7dcc2de8c3239712b0b997c3e41")
             for filename in ("FeyNobg.safetensors", "config.json", "preprocessor_config.json")
         ])
+
+    def test_missing_model_lists_local_paths_without_download(self):
+        (self.model_dir / self.nodes.WEIGHTS).unlink()
+        shared = self.models_dir / "shared"
+        self.folder_paths.get_folder_paths.side_effect = None
+        self.folder_paths.get_folder_paths.return_value = [str(shared)]
+        self.enterContext(patch.dict(os.environ))
+        os.environ.pop("FEYNOBG_ALLOW_HF_DOWNLOAD", None)
+        download = Mock()
+        with mock_modules({"huggingface_hub": SimpleNamespace(hf_hub_download=download)}):
+            with self.assertRaises(FileNotFoundError) as failure:
+                self.nodes._resolve_model_dir()
+        for path in (self.volume_dir, self.model_dir, shared / "FeyNoBg"):
+            self.assertIn(str(path), str(failure.exception))
+        for model_file in self.nodes.MODEL_FILES:
+            self.assertIn(model_file, str(failure.exception))
+        download.assert_not_called()
+
+    @unittest.skipUnless(os.getenv("FEYNOBG_TEST_MODEL_DIR"), "requires a local FeyNobg checkpoint")
+    def test_real_checkpoint_matches_model_key_schema(self):
+        from nobg.birefnet.modeling_birefnet import BiRefNet, BiRefNetConfig
+        from safetensors import safe_open
+
+        directory = Path(os.environ["FEYNOBG_TEST_MODEL_DIR"])
+        config = BiRefNetConfig(**json.loads((directory / self.nodes.MODEL_CONFIG).read_text()))
+        with torch.device("meta"):
+            model = BiRefNet(config)
+        target = model.state_dict()
+        with safe_open(directory / self.nodes.WEIGHTS, framework="pt") as checkpoint:
+            # Read shapes from the real checkpoint header without loading the weights.
+            shapes = {key: tuple(checkpoint.get_slice(key).get_shape()) for key in checkpoint.keys()}
+        self.assertIn("bb.swin.encoder.layers.0.blocks.0.attention.q_proj.weight", shapes)
+        converted = self.nodes._state_dict_for_model(shapes, target)
+        self.assertEqual(set(target) - set(converted), set(), "missing model keys")
+        self.assertEqual(set(converted) - set(target), set(), "unexpected checkpoint keys")
+        for key, value in converted.items():
+            shape = value.shape if isinstance(value, torch.Tensor) else value
+            self.assertEqual(tuple(target[key].shape), shape, key)
 
 
 if __name__ == "__main__":

@@ -1,5 +1,7 @@
 import json
+import os
 from pathlib import Path
+import re
 from threading import Lock
 
 import folder_paths
@@ -14,6 +16,17 @@ WEIGHTS = "FeyNobg.safetensors"
 MODEL_CONFIG = "config.json"
 PROCESSOR_CONFIG = "preprocessor_config.json"
 MODEL_FILES = (WEIGHTS, MODEL_CONFIG, PROCESSOR_CONFIG)
+VOLUME_MODEL_DIR = Path("/runpod-volume/models/RMBG/FeyNoBg")
+SWIN_BLOCK = re.compile(r"(bb\.encoder\.layers\.\d+\.blocks\.\d+\.)(.+)")
+SWIN_BLOCK_MODULES = {
+    "attention.q_proj": "attention.self.query",
+    "attention.k_proj": "attention.self.key",
+    "attention.v_proj": "attention.self.value",
+    "attention.o_proj": "attention.output.dense",
+    "attention.relative_position_bias": "attention.self",
+    "mlp.fc1": "intermediate.dense",
+    "mlp.fc2": "output.dense",
+}
 TILE = 1024
 STRIDE = 896
 PRECISIONS = {"fp16": torch.float16, "bf16": torch.bfloat16, "fp32": torch.float32}
@@ -24,8 +37,8 @@ _model_lock = Lock()
 
 def _resolve_model_dir():
     candidates = [
+        VOLUME_MODEL_DIR,
         Path(folder_paths.models_dir) / "RMBG" / "FeyNoBg",
-        Path("/runpod-volume/models/RMBG/FeyNoBg"),
     ]
     # The worker's extra_model_paths.yaml registers the lowercase variant.
     for registry_name in ("RMBG", "rmbg"):
@@ -38,6 +51,13 @@ def _resolve_model_dir():
         if all((model_dir / filename).is_file() for filename in MODEL_FILES):
             return model_dir.resolve()
 
+    if os.environ.get("FEYNOBG_ALLOW_HF_DOWNLOAD") != "1":
+        searched = "\n".join(f"  - {path}" for path in dict.fromkeys(candidates))
+        raise FileNotFoundError(
+            f"FeyNoBgMatte requires all of {', '.join(MODEL_FILES)} in one directory. "
+            f"Searched local paths:\n{searched}"
+        )
+
     from huggingface_hub import hf_hub_download
 
     # The pinned revision places all files in the same Hub cache snapshot.
@@ -46,6 +66,41 @@ def _resolve_model_dir():
         for filename in MODEL_FILES
     ]
     return Path(paths[0]).parent
+
+
+def _state_dict_for_model(checkpoint, target):
+    # The pinned FeyNobg checkpoint uses the Swin layout from Transformers 5.9.
+    # The worker's 5.5.4 SwinBackbone registers embeddings and encoder directly.
+    patch_weight = "embeddings.patch_embeddings.projection.weight"
+    if "bb.swin." + patch_weight not in checkpoint or "bb." + patch_weight not in target:
+        return checkpoint
+
+    converted = {}
+    for key, tensor in checkpoint.items():
+        # SwinModel's final norm affects last_hidden_state only. BiRefNet uses
+        # the stage feature maps, whose own trained norms are loaded unchanged.
+        if key in ("bb.swin.layernorm.weight", "bb.swin.layernorm.bias"):
+            continue
+        for prefix in ("embeddings.", "encoder."):
+            if key.startswith("bb.swin." + prefix):
+                key = "bb." + key.removeprefix("bb.swin.")
+                break
+        match = SWIN_BLOCK.fullmatch(key)
+        if match:
+            block, suffix = match.groups()
+            module, _, parameter = suffix.rpartition(".")
+            if module in SWIN_BLOCK_MODULES:
+                key = f"{block}{SWIN_BLOCK_MODULES[module]}.{parameter}"
+        if key in converted:
+            raise ValueError(f"FeyNoBgMatte checkpoint contains multiple tensors for {key}")
+        converted[key] = tensor
+
+    # 5.5.4 persists the deterministic index derived from the window geometry.
+    # The checkpoint only stores the learned bias table that the index looks up.
+    for key, tensor in target.items():
+        if key.endswith(".attention.self.relative_position_index"):
+            converted.setdefault(key, tensor)
+    return converted
 
 
 class _FeyNoBg:
@@ -58,7 +113,9 @@ class _FeyNoBg:
         self.dtype = PRECISIONS[precision]
         config = BiRefNetConfig(**json.loads((model_dir / MODEL_CONFIG).read_text(encoding="utf-8")))
         model = BiRefNet(config)
-        model.load_state_dict(load_file(str(model_dir / WEIGHTS)), strict=True)
+        checkpoint = load_file(str(model_dir / WEIGHTS))
+        model.load_state_dict(_state_dict_for_model(checkpoint, model.state_dict()), strict=True)
+        del checkpoint
         self.model = model.eval().to(dtype=self.dtype).to(self.device)
         processor_config = json.loads((model_dir / PROCESSOR_CONFIG).read_text(encoding="utf-8"))
         self.processor = BiRefNetImageProcessor(**processor_config)
