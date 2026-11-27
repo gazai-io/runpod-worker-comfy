@@ -119,7 +119,8 @@ RUN git clone https://github.com/ltdrdata/ComfyUI-Impact-Subpack.git /comfyui/cu
 RUN git clone https://github.com/kijai/ComfyUI-WanAnimatePreprocess.git /comfyui/custom_nodes/ComfyUI-WanAnimatePreprocess
 RUN git clone https://github.com/kijai/ComfyUI-WanVideoWrapper.git /comfyui/custom_nodes/ComfyUI-WanVideoWrapper
 RUN git clone https://github.com/aria1th/ComfyUI-LogicUtils.git /comfyui/custom_nodes/ComfyUI-LogicUtils
-RUN git clone https://github.com/1038lab/ComfyUI-QwenVL.git /comfyui/custom_nodes/ComfyUI-QwenVL
+RUN git clone --no-checkout https://github.com/gazai-io/ComfyUI-QwenVL.git /comfyui/custom_nodes/ComfyUI-QwenVL && \
+    git -C /comfyui/custom_nodes/ComfyUI-QwenVL checkout --detach 5e33a8485ec9d0f52ecca71e109c07b83bb2f005
 RUN git clone https://github.com/adieyal/comfyui-dynamicprompts.git /comfyui/custom_nodes/comfyui-dynamicprompts
 RUN git clone https://github.com/endman100/ComfyUI_logic_lite.git /comfyui/custom_nodes/ComfyUI_logic_lite
 RUN git clone https://github.com/endman100/ComfyUI-See-through.git /comfyui/custom_nodes/ComfyUI-See-through
