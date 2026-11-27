@@ -124,6 +124,8 @@ RUN git clone https://github.com/adieyal/comfyui-dynamicprompts.git /comfyui/cus
 RUN git clone https://github.com/endman100/ComfyUI_logic_lite.git /comfyui/custom_nodes/ComfyUI_logic_lite
 RUN git clone https://github.com/endman100/ComfyUI-See-through.git /comfyui/custom_nodes/ComfyUI-See-through
 RUN git clone https://github.com/endman100/ComfyUI-UnlimitedOCR.git /comfyui/custom_nodes/ComfyUI-UnlimitedOCR
+RUN git clone --no-checkout https://github.com/ArcAnima/ComfyUI-Anima-Ref-Adapter.git /comfyui/custom_nodes/ComfyUI-Anima-Ref-Adapter && \
+    git -C /comfyui/custom_nodes/ComfyUI-Anima-Ref-Adapter checkout --detach 99c222e1c2da472f4b514583b2dbd1b5afb4bdd9
 RUN git clone --no-checkout https://github.com/gazai-io/ComfyUI-FeyNoBg-Matte.git /comfyui/custom_nodes/ComfyUI-FeyNoBg-Matte && \
     git -C /comfyui/custom_nodes/ComfyUI-FeyNoBg-Matte checkout --detach 83bc32dc65f4dacdfb814fa62424b974167467e5
 
