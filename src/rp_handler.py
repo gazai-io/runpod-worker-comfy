@@ -705,37 +705,3 @@ def handler(job):
 # Start the handler only if this script is run directly
 if __name__ == "__main__":
     runpod.serverless.start({"handler": handler})
-
-    # test download_image_from_s3
-    # s3_obj = {"bucket_name": "gazai", "object_key": "videos/clwyxv3h30000fh6yiygggtle/00121c91-484f-4eb7-bdf3-7ed15c7185ad/output.mp4"}
-    # image_base64 = download_image_from_s3(s3_obj)
-    # save_base64_image_to_file(image_base64, "output.mp4")
-    
-    # test downlaod_image_from_url
-    # image_url = "https://www.gazai.ai/images/gazai-chan-chibi-no-bg.png"
-    # image_base64 = downlaod_image_from_url(image_url)
-    # save_base64_image_to_file(image_base64, "test.png")
-
-    # test upload_file_to_s3
-    # job_id = "test_job_id"
-    # image_location = "C:\\Users\\user\\Downloads\\新增資料夾 (102)\\seethrough_20260401_225741_da28c553.psd"
-    # url, obj_key = runpod_upload_image(job_id, image_location, bucket_name="runpod-temp")
-    # print(f"Uploaded image URL: {url}, S3 Object Key: {obj_key}")
-    
-    # test queue_comfyui
-    # COMFY_HOST = "220.135.18.159:1120"
-    # workflow_path = r"./test_resources/workflows/test copy.json"
-    # with open(workflow_path, "r") as f:
-    #     workflow = json.load(f)["input"]["workflow"]
-    # # workflow["23"]["inputs"]["noise_seed"] = random.randint(0, 100)
-    # images = []
-    # for progress in queue_comfyui(images, workflow):
-    #     message = progress.get("message", {})
-    #     print(message.get("progress_1_value"), message.get("progress_1_max"), 
-    #           message.get("progress_2_value"), message.get("progress_2_max"))
-    # print("final progress:", progress)
-    # if progress.get("success", False):
-    #     images_result = process_output_images(progress.get("outputs", []), "test23408920", [], return_format="url")
-    #     print(images_result)
-
-

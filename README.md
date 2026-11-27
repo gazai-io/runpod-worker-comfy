@@ -345,7 +345,7 @@ docker build --build-arg MODEL_TYPE=sd3 --build-arg HUGGINGFACE_ACCESS_TOKEN=<yo
 
 ## Local testing
 
-Both tests will use the data from [test_input.json](./test_input.json), so make your changes in there to test this properly.
+[test_input.json](./test_input.json) provides an example request for local testing.
 
 ### Setup
 
@@ -407,11 +407,7 @@ wsl -d Ubuntu
 
 ### Testing the RunPod handler
 
-- Run all tests: `python -m unittest discover`
-- If you want to run a specific test: `python -m unittest tests.test_rp_handler.TestRunpodWorkerComfy.test_bucket_endpoint_not_configured`
-
-You can also start the handler itself to have the local server running: `python src/rp_handler.py`
-To get this to work you will also need to start "ComfyUI", otherwise the handler will not work.
+Start ComfyUI, then run `python src/rp_handler.py` to start the handler locally.
 
 ### Local API
 
