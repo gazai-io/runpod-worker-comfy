@@ -325,7 +325,85 @@ def runpod_upload_image(
 
     return presigned_url, f"{bucket}/{job_id}/{image_name}{file_extension}"
 
-def process_output_images(outputs, job_id, download_file_names, return_format="url"):
+# Text extensions written by installed Save/Output text nodes
+# (ComfyUI core SaveText, WAS "Save Text File", SaveText|pysssss, SaveStringKJ).
+TEXT_OUTPUT_EXTENSIONS = (
+    ".txt",
+    ".caption",
+    ".json",
+    ".yaml",
+    ".yml",
+    ".md",
+    ".csv",
+    ".tsv",
+    ".xml",
+    ".log",
+    ".ini",
+    ".toml",
+)
+
+# class_type values of genuine save/output text nodes installed on this worker.
+# Preview/display/debug nodes such as PreviewAny and ShowText|pysssss are excluded.
+SAVE_TEXT_NODE_CLASS_TYPES = {
+    "SaveText",  # ComfyUI core (comfy_extras/nodes_text.py, node_id SaveText)
+    "Save Text File",  # WAS Node Suite (schema node_id)
+    "SaveTextFile",  # WAS class-name alias
+    "SaveText|pysssss",  # ComfyUI-Custom-Scripts
+    "SaveStringKJ",  # ComfyUI-KJNodes
+}
+
+
+def _text_output_extension(filename):
+    """Return the matching text extension for a filename, or None."""
+    name = os.path.basename(str(filename or "")).lower()
+    for ext in TEXT_OUTPUT_EXTENSIONS:
+        if name.endswith(ext):
+            return ext
+    return None
+
+
+def _is_text_output_file_item(item):
+    """True if a ComfyUI history file item is a genuine output-folder text file."""
+    if not isinstance(item, dict) or "filename" not in item:
+        return False
+    if _text_output_extension(item.get("filename")) is None:
+        return False
+    return item.get("type") == "output"
+
+
+def _is_text_file_item(item):
+    """True if a history file item is a text file (output or preview/temp)."""
+    return isinstance(item, dict) and "filename" in item and _text_output_extension(item.get("filename")) is not None
+
+
+def _workflow_class_type(workflow, node_id):
+    """Return workflow[node_id].class_type, or None if it cannot be determined."""
+    if not isinstance(workflow, dict):
+        return None
+    node = workflow.get(str(node_id))
+    if not isinstance(node, dict):
+        return None
+    class_type = node.get("class_type")
+    return class_type if isinstance(class_type, str) else None
+
+
+def _is_save_text_node(workflow, node_id):
+    """True if this node is an installed Save/Output text node."""
+    class_type = _workflow_class_type(workflow, node_id)
+    return class_type in SAVE_TEXT_NODE_CLASS_TYPES
+
+
+def _read_text_output_file(rel_path, output_path):
+    """Read a UTF-8 text file from the ComfyUI output folder, or None if missing."""
+    local_path = os.path.join(output_path, rel_path)
+    if not os.path.exists(local_path):
+        print(f"runpod-worker-comfy - text output file does not exist: {local_path}")
+        return None
+    with open(local_path, "r", encoding="utf-8") as file_obj:
+        return file_obj.read()
+
+
+def process_output_images(outputs, job_id, download_file_names, return_format="url", workflow=None):
     """
     This function takes the "outputs" from image generation and the job ID,
     then determines the correct way to return the image, either as a direct URL
@@ -336,11 +414,17 @@ def process_output_images(outputs, job_id, download_file_names, return_format="u
         outputs (dict): A dictionary containing the outputs from image generation,
                         typically includes node IDs and their respective output data.
         job_id (str): The unique identifier for the job.
+        workflow (dict, optional): The submitted ComfyUI API-format workflow. Used
+                        only to identify genuine Save/Output text nodes by class_type.
+                        Defaults to None so existing callers are unchanged.
 
     Returns:
         dict: A dictionary with the status ('success' or 'error') and the message,
               which is either the URL to the image in the AWS S3 bucket or a base64
               encoded string of the image. In case of error, the message details the issue.
+              On success, also includes 'texts' (flat list of saved text) and
+              'text_outputs' (text grouped by node id). Preview/debug text nodes
+              such as PreviewAny and ShowText are not included.
 
     The function works as follows:
     - It first determines the output path for the images from an environment variable,
@@ -352,6 +436,9 @@ def process_output_images(outputs, job_id, download_file_names, return_format="u
     - If AWS S3 is not configured, it encodes the image in base64 and returns the string.
     - If the image file does not exist in the output folder, it returns an error status
       with a message indicating the missing image file.
+    - Text is collected only from genuine Save/Output text nodes (by class_type) or
+      from history file items whose filename has a text extension and type == "output".
+      Those text files are not placed in 'message'.
     """
 
     # The path where ComfyUI stores the generated images
@@ -359,17 +446,47 @@ def process_output_images(outputs, job_id, download_file_names, return_format="u
     COMFY_TEMP_PATH = os.environ.get("COMFY_TEMP_PATH", "/comfyui/temp")
 
     output_files = []
+    text_outputs = []
+    text_by_node = {}
     print(f"outputs: {outputs}")
     for node_id, node_output in outputs.items():
-        for key in node_output:
-            if isinstance(node_output[key], list):
-                for item in node_output[key]:
-                    if isinstance(item, dict) and "filename" in item:
+        node_id_str = str(node_id)
+        collect_inline_text = _is_save_text_node(workflow, node_id_str)
+        file_texts = []
+        inline_texts = []
+        for key, val in node_output.items():
+            if not isinstance(val, list):
+                continue
+            for item in val:
+                if isinstance(item, dict) and "filename" in item:
+                    if _is_text_file_item(item):
+                        # Never treat text files as image/video message items.
+                        if _is_text_output_file_item(item):
+                            rel_path = os.path.join(item.get("subfolder", ""), item["filename"])
+                            content = _read_text_output_file(rel_path, COMFY_OUTPUT_PATH)
+                            if content is not None:
+                                file_texts.append(content)
+                    else:
                         output_files.append(
                             os.path.join(item.get("subfolder", ""), item["filename"])
                         )
+                elif (
+                    collect_inline_text
+                    and key in ("text", "string", "strings")
+                    and isinstance(item, str)
+                ):
+                    inline_texts.append(item)
+
+        # Prefer written output-file contents when present (core SaveText
+        # reports both a file and ui text). Fall back to inline text from
+        # save/output text nodes such as WAS "Save Text File".
+        collected = file_texts if file_texts else inline_texts
+        if collected:
+            text_outputs.extend(collected)
+            text_by_node.setdefault(node_id_str, []).extend(collected)
 
     print(f"runpod-worker-comfy - image generation is done output_files: {output_files}")
+    print(f"runpod-worker-comfy - collected text outputs: {text_by_node}")
 
     message = []
     for output_image in output_files:
@@ -418,6 +535,8 @@ def process_output_images(outputs, job_id, download_file_names, return_format="u
         "success": True,
         "message": message,
         "download_files": download_files,
+        "texts": text_outputs,
+        "text_outputs": text_by_node,
     }
 
 def retry_loop(func, retrys=3, timeout=10, wait_time=2, *args, **kwargs):
@@ -695,7 +814,7 @@ def handler(job):
             runpod.serverless.progress_update(job, progress)
 
     # Get the generated image and return it as URL in an AWS bucket or as base64
-    images_result = process_output_images(progress.get("outputs", {}), job["id"], download_file_names, return_format=return_format)
+    images_result = process_output_images(progress.get("outputs", {}), job["id"], download_file_names, return_format=return_format, workflow=workflow)
 
     result = {**images_result, "refresh_worker": REFRESH_WORKER}
     # print(f"output result: {result}")
