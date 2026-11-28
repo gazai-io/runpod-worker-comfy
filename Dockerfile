@@ -7,8 +7,12 @@ ENV PIP_PREFER_BINARY=1
 ENV PYTHONUNBUFFERED=1 
 # Speed up some cmake builds
 ENV CMAKE_BUILD_PARALLEL_LEVEL=8
+# Keep VHS on the imageio-ffmpeg static binary even when apt ffmpeg is on PATH.
+# VHS otherwise scores system vs imageio ffmpeg and may switch.
+ENV VHS_USE_IMAGEIO_FFMPEG=1
 
 # Install minimal dependencies needed for building
+# ffmpeg also provides ffprobe, used by ComfyUI_logic_lite audio-stream checks.
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     software-properties-common \
@@ -17,6 +21,7 @@ RUN apt-get update && \
     wget \
     curl \
     libgl1 libglib2.0-0 libsm6 libxrender1 libxext6 \
+    ffmpeg \
     ca-certificates \
     && add-apt-repository ppa:deadsnakes/ppa && \
     apt-get update && \
